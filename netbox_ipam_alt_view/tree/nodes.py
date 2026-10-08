@@ -52,4 +52,5 @@ class Node:
     context: bool = False  # ancestor shown only to give a filtered match its place in the tree
     count: int = 0  # "more" rows: number of hidden free blocks
     addresses: int = 0  # "more" rows: total hidden addresses
+    child_count: int | None = None  # descendant count; None when the user cannot see them all
     label: str = ""  # extra caption, e.g. the VRF name on aggregate rows in the aggregate tab

@@ -95,3 +95,36 @@ class PermissionTest(TestCase):
     def test_hidden_prefix_key_not_found(self):
         with self.assertRaises(NodeNotFound):
             TreeBuilder(self.user).children(pfx_key(self.t["p16"].pk), 0)
+
+    def test_restricted_user_gets_no_free_space(self):
+        # Hidden prefixes would otherwise be presented as free space.
+        nodes = TreeBuilder(self.user, show_free_space=True).children(pfx_key(self.t["p24"].pk), 0)
+        self.assertEqual([n.kind for n in nodes], ["prefix"])
+
+    def test_restricted_user_child_count_hidden(self):
+        root = TreeBuilder(self.user).children(vrf_key(None), 0)[0]
+        self.assertIsNone(root.child_count)
+
+
+class HiddenChildrenTest(TestCase):
+    def setUp(self):
+        self.t = make_tree()
+        self.user = get_user_model().objects.create_user("containers-only")
+        perm = ObjectPermission.objects.create(name="containers", actions=["view"], constraints={"status": "container"})
+        perm.object_types.add(ContentType.objects.get_for_model(Prefix))
+        perm.users.add(self.user)
+
+    def test_no_toggle_when_all_children_hidden(self):
+        nodes = TreeBuilder(self.user).children(vrf_key(None), 0)
+        self.assertEqual(kinds(nodes), [("prefix", "10.1.0.0/16")])
+        self.assertFalse(nodes[0].has_children)
+
+    def test_hidden_vrf_not_listed(self):
+        # The user may see RED's container prefix but not the RED VRF itself.
+        self.assertEqual([n.key for n in TreeBuilder(self.user).roots()], [vrf_key(None)])
+        nodes = TreeBuilder(self.user).filtered(Prefix.objects.filter(pk=self.t["r16"].pk))
+        self.assertEqual(nodes, [])
+
+    def test_unrestricted_child_count(self):
+        root = TreeBuilder(superuser(), show_free_space=False).children(pfx_key(self.t["p16"].pk), 0)[0]
+        self.assertEqual(root.child_count, 1)

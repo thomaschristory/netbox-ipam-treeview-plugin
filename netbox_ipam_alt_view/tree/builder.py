@@ -1,6 +1,7 @@
 """Turns permission-restricted IPAM querysets into ordered tree Node lists."""
 
 import netaddr
+from django.db.models import Exists, OuterRef
 from ipam.models import VRF, Aggregate, Prefix
 
 from ..conf import get_setting
@@ -67,6 +68,7 @@ class TreeBuilder:
             network=p.prefix,
             vrf_id=p.vrf_id,
             has_children=p._children > 0,
+            child_count=None if self.restricted else p._children,
         )
 
     def _agg_node(self, agg, vrf_id, level, parent_key):
@@ -82,7 +84,8 @@ class TreeBuilder:
         )
 
     def _gaps_allowed(self, obj):
-        if not self.show_free_space:
+        # With constrained permissions, prefixes the user cannot see would be presented as free space.
+        if not self.show_free_space or self.restricted:
             return False
         return not (self.respect_mark_utilized and isinstance(obj, Prefix) and (obj.is_pool or obj.mark_utilized))
 
@@ -134,7 +137,30 @@ class TreeBuilder:
                 used.add(agg.pk)
         nodes = [self._agg_node(a, vrf_id, level, parent_key) for a in aggs if a.pk in used]
         nodes += [self._prefix_node(p, level, parent_key) for p in self.prefixes.filter(pk__in=orphans)]
-        return sorted(nodes, key=_net_key)
+        return self._prune_hidden_children(sorted(nodes, key=_net_key))
+
+    def _prune_hidden_children(self, nodes):
+        """With constrained permissions, drop the expand toggle from prefixes whose descendants are all hidden.
+
+        NetBox's cached _children counts every descendant, visible or not.
+        """
+        if not self.restricted:
+            return nodes
+        pending = [n for n in nodes if n.kind == "prefix" and n.has_children and not n.expanded]
+        if not pending:
+            return nodes
+        visible = Prefix.objects.restrict(self.user, "view")
+        has_visible = set()
+        for is_global in (True, False):
+            group = [n.obj.pk for n in pending if (n.vrf_id is None) == is_global]
+            if not group:
+                continue
+            inner = visible.filter(prefix__net_contained=OuterRef("prefix"))
+            inner = inner.filter(vrf__isnull=True) if is_global else inner.filter(vrf_id=OuterRef("vrf_id"))
+            has_visible |= set(Prefix.objects.filter(pk__in=group).filter(Exists(inner)).values_list("pk", flat=True))
+        for n in pending:
+            n.has_children = n.obj.pk in has_visible
+        return nodes
 
     def _get_prefix(self, pk):
         try:
@@ -185,14 +211,14 @@ class TreeBuilder:
             kids = sorted(
                 (self._prefix_node(p, level + 1, key) for p in self.prefixes.filter(pk__in=tops)), key=_net_key
             )
-            return self._with_gaps(agg, key, kids, level + 1, vrf_id)
+            return self._with_gaps(agg, key, self._prune_hidden_children(kids), level + 1, vrf_id)
         p = self._get_prefix(obj_id)
         kids = [self._prefix_node(c, level + 1, key) for c in self._direct_children(p)]
-        return self._with_gaps(p, key, kids, level + 1, p.vrf_id)
+        return self._with_gaps(p, key, self._prune_hidden_children(kids), level + 1, p.vrf_id)
 
     def node_for(self, obj):
         if isinstance(obj, Prefix):
-            return self._prefix_node(obj, 0, None)
+            return self._prune_hidden_children([self._prefix_node(obj, 0, None)])[0]
         return Node("vrf", vrf_key(obj.pk), 0, obj=obj, vrf_id=obj.pk, has_children=True)
 
     def aggregate_roots(self, agg):
@@ -280,9 +306,10 @@ class TreeBuilder:
             items += self._aggregate_items(vrf_id)
         nested = self._drop_empty_aggregates(nest(items))
         # Free space is only shown when every child is loaded; a truncated load would show hidden children as free.
-        return self._emit(
+        nodes = self._emit(
             nested, level=level + 1, parent_key=key, parent_obj=obj, vrf_id=vrf_id, gaps=not self.truncated
         )
+        return self._prune_hidden_children(nodes)
 
     def full_tree(self):
         """Roots plus every root's subtree, sharing one row budget."""
@@ -348,14 +375,18 @@ class TreeBuilder:
         if not self.group_by_vrf:
             items = [Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in kept]
             nested = self._drop_empty_aggregates(nest(items + self._aggregate_items(ALL_VRFS)))
-            return self._emit(
+            nodes = self._emit(
                 nested, level=0, parent_key=None, parent_obj=None, vrf_id=ALL_VRFS, gaps=False, matches=matches
             )
+            return self._prune_hidden_children(nodes)
 
         out = []
         groups: dict = {}
+        visible_vrfs = set(self.vrfs.values_list("pk", flat=True))
         for p in kept:
-            groups.setdefault(p.vrf_id, []).append(p)
+            # Same rule as roots(): prefixes in a VRF the user cannot view are not reachable in grouped mode.
+            if p.vrf_id is None or p.vrf_id in visible_vrfs:
+                groups.setdefault(p.vrf_id, []).append(p)
         for vrf_id in sorted(groups, key=lambda v: (v is not None, groups[v][0].vrf.name if v else "")):
             prefixes = groups[vrf_id]
             vrf_node = Node(
@@ -374,4 +405,4 @@ class TreeBuilder:
             out += self._emit(
                 nested, level=1, parent_key=vrf_node.key, parent_obj=None, vrf_id=vrf_id, gaps=False, matches=matches
             )
-        return out
+        return self._prune_hidden_children(out)
