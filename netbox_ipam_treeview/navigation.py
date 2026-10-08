@@ -10,7 +10,7 @@ PERMISSIONS = ["ipam.view_prefix"]
 def _add_to_ipam_menu():
     """Insert the tree right after "Prefixes" in NetBox's IPAM menu.
 
-    Plugins have no API for core menus, so this edits IPAM_MENU (plain dataclasses, the same in NetBox 4.5-4.7).
+    Plugins have no API for core menus, so this edits IPAM_MENU (plain dataclasses in NetBox 4.7).
     Returns False when the menu looks different, and the caller falls back to the Plugins menu.
     """
     try:

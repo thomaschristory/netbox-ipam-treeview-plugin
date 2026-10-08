@@ -32,7 +32,7 @@ in place, one-click **Expand all** / **Collapse all**, and the tree remembering 
 
 | Plugin | NetBox      | Python      |
 |--------|-------------|-------------|
-| 0.1.x  | 4.5 – 4.7   | 3.12 – 3.14 |
+| 0.1.x  | 4.7         | 3.12 – 3.14 |
 
 ## Installation
 

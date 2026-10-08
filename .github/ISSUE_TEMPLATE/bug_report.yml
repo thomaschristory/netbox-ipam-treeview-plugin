@@ -1,0 +1,103 @@
+name: 🐞 Bug report
+description: The tree view behaves incorrectly, shows wrong data, or errors.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Versions and exact steps make most issues reproducible.
+
+        > [!WARNING]
+        > **Redact sensitive data.** Replace real prefixes, tenant names or tokens if they are confidential.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: "`pip show netbox-ipam-treeview-plugin`"
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: netbox-version
+    attributes:
+      label: NetBox version
+      description: Shown in the NetBox UI footer.
+      placeholder: "v4.7.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is NetBox deployed?
+      options:
+        - netbox-docker
+        - Bare metal / VM (systemd)
+        - NetBox Cloud / Enterprise
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Prefix Tree page
+        - Tree tab on a Prefix
+        - Tree tab on an Aggregate
+        - Tree tab on a VRF
+        - Tree view button on the prefix list
+        - IPAM menu entry
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the URL (with filters), what you clicked, and a minimal set of prefixes/VRFs/aggregates if relevant.
+      placeholder: |
+        1. Open /plugins/ipam-tree/?tenant=finance
+        2. Click "Expand all"
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Actual behavior, including any error message, server traceback or browser console output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: PLUGINS_CONFIG
+      description: Optional. Your `netbox_ipam_treeview` settings.
+      render: python
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true
+        - label: I'm on the latest release of the plugin, or I noted my version above.
+          required: true

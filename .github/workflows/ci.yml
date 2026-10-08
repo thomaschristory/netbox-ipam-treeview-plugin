@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        netbox: ["v4.5.10", "v4.6.10", "v4.7.2"]
+        netbox: ["v4.7.2"]
     services:
       postgres:
         image: postgres:18-alpine

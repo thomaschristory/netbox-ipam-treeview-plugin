@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/thomaschristory/netbox-ipam-treeview-plugin#readme
+    about: Installation, settings and permissions. Please check here first.
+  - name: 🔐 Security vulnerability
+    url: https://github.com/thomaschristory/netbox-ipam-treeview-plugin/security/advisories/new
+    about: Report a security issue privately. Please do NOT open a public issue for vulnerabilities.
