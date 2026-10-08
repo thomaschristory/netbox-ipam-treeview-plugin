@@ -2,7 +2,7 @@ PLUGIN_NAME = "netbox_ipam_treeview"
 
 DEFAULTS = {
     "show_menu_item": True,
-    "menu_location": "ipam",  # "ipam": top of the IPAM menu; "plugins": the Plugins menu
+    "menu_location": "ipam",  # "ipam": IPAM menu, below "Prefixes"; "plugins": the Plugins menu
     "show_list_toggle": True,
     "show_prefix_tab": True,
     "show_aggregate_tab": True,

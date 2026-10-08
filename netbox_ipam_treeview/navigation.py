@@ -8,24 +8,27 @@ PERMISSIONS = ["ipam.view_prefix"]
 
 
 def _add_to_ipam_menu():
-    """Put the tree at the top of NetBox's IPAM menu.
+    """Insert the tree right after "Prefixes" in NetBox's IPAM menu.
 
-    Plugins have no API for core menus, so this prepends a group to IPAM_MENU (a plain dataclass, the same in
-    NetBox 4.5-4.7). Returns False when the menu module looks different, and the caller falls back to the
-    Plugins menu.
+    Plugins have no API for core menus, so this edits IPAM_MENU (plain dataclasses, the same in NetBox 4.5-4.7).
+    Returns False when the menu looks different, and the caller falls back to the Plugins menu.
     """
     try:
-        from netbox.navigation import MenuGroup, MenuItem
+        from netbox.navigation import MenuItem
         from netbox.navigation.menu import IPAM_MENU
     except ImportError:
         return False
-    if not hasattr(IPAM_MENU, "groups"):
-        return False
-    if any(item.link == LINK for group in IPAM_MENU.groups for item in group.items):
+    groups = getattr(IPAM_MENU, "groups", ())
+    if any(item.link == LINK for group in groups for item in group.items):
         return True
-    entry = MenuGroup(label="Tree View", items=(MenuItem(link=LINK, link_text=LABEL, permissions=PERMISSIONS),))
-    IPAM_MENU.groups = (entry, *IPAM_MENU.groups)
-    return True
+    for group in groups:
+        links = [item.link for item in group.items]
+        if "ipam:prefix_list" in links:
+            at = links.index("ipam:prefix_list") + 1
+            entry = MenuItem(link=LINK, link_text=LABEL, permissions=PERMISSIONS)
+            group.items = (*group.items[:at], entry, *group.items[at:])
+            return True
+    return False
 
 
 _show = get_setting("show_menu_item")
