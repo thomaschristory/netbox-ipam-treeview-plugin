@@ -1,1 +1,1 @@
-# netbox-ipam-alt-view-plugin
+# netbox-ipam-treeview-plugin

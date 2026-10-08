@@ -4,8 +4,8 @@ from django.test import TestCase
 from ipam.models import Prefix
 from users.models import ObjectPermission
 
-from netbox_ipam_alt_view.tree.builder import NodeNotFound, TreeBuilder
-from netbox_ipam_alt_view.tree.nodes import agg_key, pfx_key, vrf_key
+from netbox_ipam_treeview.tree.builder import NodeNotFound, TreeBuilder
+from netbox_ipam_treeview.tree.nodes import agg_key, pfx_key, vrf_key
 
 from .fixtures import make_tree, superuser
 

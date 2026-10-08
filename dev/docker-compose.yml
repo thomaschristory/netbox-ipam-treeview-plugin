@@ -9,9 +9,9 @@ x-netbox: &netbox
   user: "netbox:root"
   volumes:
     - ./configuration/plugins.py:/etc/netbox/config/plugins.py:ro
-    - ../netbox_ipam_alt_view:/plugin/netbox_ipam_alt_view:ro
+    - ../netbox_ipam_treeview:/plugin/netbox_ipam_treeview:ro
     # Served as-is, so CSS/JS edits are live without collectstatic.
-    - ../netbox_ipam_alt_view/static/netbox_ipam_alt_view:/opt/netbox/netbox/static/netbox_ipam_alt_view:ro
+    - ../netbox_ipam_treeview/static/netbox_ipam_treeview:/opt/netbox/netbox/static/netbox_ipam_treeview:ro
     - ../tests_netbox:/plugin/tests_netbox:ro
     - ./scripts:/plugin/dev/scripts:ro
 

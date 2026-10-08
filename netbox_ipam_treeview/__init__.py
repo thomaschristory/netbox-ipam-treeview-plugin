@@ -9,7 +9,7 @@ except ImportError:  # imported outside NetBox (pure unit tests, build tools)
 if PluginConfig is not None:
 
     class IPAMAltViewConfig(PluginConfig):
-        name = "netbox_ipam_alt_view"
+        name = "netbox_ipam_treeview"
         verbose_name = "IPAM Tree"
         description = "DDI-style collapsible tree view for NetBox IPAM prefixes"
         version = __version__

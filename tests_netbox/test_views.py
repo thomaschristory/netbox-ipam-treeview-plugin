@@ -2,12 +2,12 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from netbox_ipam_alt_view.columns import USER_CONFIG_PATH
-from netbox_ipam_alt_view.tree.nodes import pfx_key, vrf_key
+from netbox_ipam_treeview.columns import USER_CONFIG_PATH
+from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
 
 from .fixtures import make_tree, superuser
 
-NS = "plugins:netbox_ipam_alt_view:"
+NS = "plugins:netbox_ipam_treeview:"
 
 
 class ViewTest(TestCase):
@@ -46,7 +46,7 @@ class ViewTest(TestCase):
 
     def test_subtree_root_and_truncation_header(self):
         make_tree()
-        with self.settings(PLUGINS_CONFIG={"netbox_ipam_alt_view": {"expand_all_limit": 2}}):
+        with self.settings(PLUGINS_CONFIG={"netbox_ipam_treeview": {"expand_all_limit": 2}}):
             r = self.client.get(reverse(NS + "subtree"), {"key": "__root__"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers.get("X-Tree-Truncated"), "1")

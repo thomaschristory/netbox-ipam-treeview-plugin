@@ -1,8 +1,8 @@
 from django.test import TestCase
 from ipam.models import Prefix
 
-from netbox_ipam_alt_view.tree.builder import TreeBuilder
-from netbox_ipam_alt_view.tree.nodes import pfx_key, vrf_key
+from netbox_ipam_treeview.tree.builder import TreeBuilder
+from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
 
 from .fixtures import make_tree, superuser
 

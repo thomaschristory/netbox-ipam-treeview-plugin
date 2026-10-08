@@ -1,0 +1,17 @@
+{% extends base_template %}
+{% load static %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'netbox_ipam_treeview/tree.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% include 'netbox_ipam_treeview/inc/toolbar.html' %}
+  {% include 'netbox_ipam_treeview/inc/table.html' %}
+{% endblock %}
+
+{% block javascript %}
+  {{ block.super }}
+  <script src="{% static 'netbox_ipam_treeview/tree.js' %}"></script>
+{% endblock %}

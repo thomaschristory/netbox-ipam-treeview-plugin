@@ -1,6 +1,6 @@
 import pytest
 
-from netbox_ipam_alt_view.tree.nodes import ALL_VRFS, agg_key, parse_key, pfx_key, vrf_key
+from netbox_ipam_treeview.tree.nodes import ALL_VRFS, agg_key, parse_key, pfx_key, vrf_key
 
 
 def test_keys_roundtrip():

@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from .fixtures import make_tree, superuser
 
-TREE = "plugins:netbox_ipam_alt_view:tree"
+TREE = "plugins:netbox_ipam_treeview:tree"
 
 
 class TabTest(TestCase):
@@ -34,7 +34,7 @@ class TabTest(TestCase):
 
     def test_tab_hidden_when_disabled(self):
         url = reverse("ipam:prefix_tree", kwargs={"pk": self.t["p16"].pk})
-        with self.settings(PLUGINS_CONFIG={"netbox_ipam_alt_view": {"show_prefix_tab": False}}):
+        with self.settings(PLUGINS_CONFIG={"netbox_ipam_treeview": {"show_prefix_tab": False}}):
             r = self.client.get(reverse("ipam:prefix", kwargs={"pk": self.t["p16"].pk}))
             self.assertNotContains(r, url)
             self.assertEqual(self.client.get(url).status_code, 404)
@@ -44,6 +44,6 @@ class TabTest(TestCase):
         self.assertContains(r, reverse(TREE) + "?status=active")
 
     def test_list_toggle_disabled(self):
-        with self.settings(PLUGINS_CONFIG={"netbox_ipam_alt_view": {"show_list_toggle": False}}):
+        with self.settings(PLUGINS_CONFIG={"netbox_ipam_treeview": {"show_list_toggle": False}}):
             r = self.client.get(reverse("ipam:prefix_list"))
             self.assertNotContains(r, 'class="btn btn-outline-primary ipt-tree-toggle"')

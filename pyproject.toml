@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "netbox-ipam-alt-view-plugin"
+name = "netbox-ipam-treeview-plugin"
 dynamic = ["version"]
 description = "DDI-style collapsible tree view for NetBox IPAM prefixes."
 readme = "README.md"
@@ -25,26 +25,26 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin"
-Repository = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin"
-Changelog = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin/blob/main/CHANGELOG.md"
-Issues = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin/issues"
+Homepage = "https://github.com/thomaschristory/netbox-ipam-treeview-plugin"
+Repository = "https://github.com/thomaschristory/netbox-ipam-treeview-plugin"
+Changelog = "https://github.com/thomaschristory/netbox-ipam-treeview-plugin/blob/main/CHANGELOG.md"
+Issues = "https://github.com/thomaschristory/netbox-ipam-treeview-plugin/issues"
 
 [project.entry-points."netbox.plugins"]
-netbox_ipam_alt_view = "netbox_ipam_alt_view:config"
+netbox_ipam_treeview = "netbox_ipam_treeview:config"
 
 [dependency-groups]
 dev = ["pytest>=8.3", "ruff>=0.12", "netaddr>=1.3"]
 
 [tool.hatch.version]
-path = "netbox_ipam_alt_view/version.py"
+path = "netbox_ipam_treeview/version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["netbox_ipam_alt_view"]
+packages = ["netbox_ipam_treeview"]
 
 [tool.hatch.build.targets.sdist]
 # Allowlist: hatchling honours .gitignore but not .git/info/exclude.
-only-include = ["netbox_ipam_alt_view", "README.md", "CHANGELOG.md", "LICENSE"]
+only-include = ["netbox_ipam_treeview", "README.md", "CHANGELOG.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 120

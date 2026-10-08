@@ -70,13 +70,13 @@ class TreeAccessMixin(AccessMixin):
         return TreeBuilder(request.user, show_free_space=_free(request))
 
     def rows(self, request, builder, nodes):
-        response = render(request, "netbox_ipam_alt_view/inc/rows.html", table_context(request, builder, nodes))
+        response = render(request, "netbox_ipam_treeview/inc/rows.html", table_context(request, builder, nodes))
         if builder.truncated:
             response["X-Tree-Truncated"] = "1"
         return response
 
     def not_found(self, request):
-        return render(request, "netbox_ipam_alt_view/inc/rows.html", {"error": True}, status=404)
+        return render(request, "netbox_ipam_treeview/inc/rows.html", {"error": True}, status=404)
 
 
 class TreeView(TreeAccessMixin, View):
@@ -97,7 +97,7 @@ class TreeView(TreeAccessMixin, View):
             storage_key="ipam-tree:page",
             root_key="__root__",
         )
-        return render(request, "netbox_ipam_alt_view/tree.html", context)
+        return render(request, "netbox_ipam_treeview/tree.html", context)
 
 
 class NodeChildrenView(TreeAccessMixin, View):
@@ -134,7 +134,7 @@ class ColumnsView(TreeAccessMixin, View):
         request.user.config.set(USER_CONFIG_PATH, columns or None, commit=True)
         next_url = request.POST.get("next", "")
         if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
-            next_url = reverse("plugins:netbox_ipam_alt_view:tree")
+            next_url = reverse("plugins:netbox_ipam_treeview:tree")
         return HttpResponseRedirect(next_url)
 
 
@@ -144,7 +144,7 @@ class ColumnsView(TreeAccessMixin, View):
 
 
 class _TreeTab(generic.ObjectView):
-    template_name = "netbox_ipam_alt_view/tab.html"
+    template_name = "netbox_ipam_treeview/tab.html"
     base_template = "generic/object.html"
     setting = None
 

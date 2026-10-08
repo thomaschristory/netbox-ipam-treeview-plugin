@@ -2,7 +2,7 @@ from django.test import TestCase
 from ipam.models import VRF, IPAddress, IPRange, Prefix
 from netaddr import IPNetwork as N
 
-from netbox_ipam_alt_view.utilization import bulk_utilization
+from netbox_ipam_treeview.utilization import bulk_utilization
 
 
 class BulkUtilizationTest(TestCase):

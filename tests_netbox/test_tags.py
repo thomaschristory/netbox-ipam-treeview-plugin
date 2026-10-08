@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 from ipam.models import Prefix
 
-from netbox_ipam_alt_view.templatetags.ipam_tree import obj_link, obj_url
+from netbox_ipam_treeview.templatetags.ipam_tree import obj_link, obj_url
 
 
 class TagTest(TestCase):
@@ -25,7 +25,7 @@ class TagTest(TestCase):
 
 class UtilBarTest(TestCase):
     def test_classes_and_label(self):
-        from netbox_ipam_alt_view.templatetags.ipam_tree import util_bar
+        from netbox_ipam_treeview.templatetags.ipam_tree import util_bar
 
         self.assertIn("bg-success", util_bar(10))
         self.assertIn('<span class="progress-label">10.0%</span>', util_bar(10))
@@ -36,6 +36,6 @@ class UtilBarTest(TestCase):
         self.assertIn('style="width: 12.5%"', util_bar(12.5))
 
     def test_none(self):
-        from netbox_ipam_alt_view.templatetags.ipam_tree import util_bar
+        from netbox_ipam_treeview.templatetags.ipam_tree import util_bar
 
         self.assertEqual(util_bar(None), "")

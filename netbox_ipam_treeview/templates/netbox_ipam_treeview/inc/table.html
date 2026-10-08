@@ -2,9 +2,9 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover ipt-tree" role="treegrid" aria-label="{% trans 'Prefix tree' %}"
-           data-children-url="{% url 'plugins:netbox_ipam_alt_view:children' %}"
-           data-subtree-url="{% url 'plugins:netbox_ipam_alt_view:subtree' %}"
-           data-expand-url="{% url 'plugins:netbox_ipam_alt_view:expand' %}"
+           data-children-url="{% url 'plugins:netbox_ipam_treeview:children' %}"
+           data-subtree-url="{% url 'plugins:netbox_ipam_treeview:subtree' %}"
+           data-expand-url="{% url 'plugins:netbox_ipam_treeview:expand' %}"
            data-storage-key="{{ storage_key }}" data-free="{{ free|yesno:'1,0' }}"
            data-filtered="{{ filtered|yesno:'1,0' }}" data-root-key="{{ root_key }}">
       <thead>
@@ -15,7 +15,7 @@
       </thead>
       <tbody>
         {% if nodes %}
-          {% include 'netbox_ipam_alt_view/inc/rows.html' %}
+          {% include 'netbox_ipam_treeview/inc/rows.html' %}
         {% else %}
           <tr class="ipt-empty">
             <td colspan="{{ columns|length|add:1 }}" class="text-center text-muted py-4">{% trans "No prefixes to show." %}</td>

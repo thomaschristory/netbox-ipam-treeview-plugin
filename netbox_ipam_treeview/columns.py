@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .conf import get_setting
 
-USER_CONFIG_PATH = "plugins.netbox_ipam_alt_view.columns"
+USER_CONFIG_PATH = "plugins.netbox_ipam_treeview.columns"
 
 COLUMNS = {
     "status": _("Status"),

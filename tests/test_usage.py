@@ -1,7 +1,7 @@
 from netaddr import IPAddress as A
 from netaddr import IPNetwork as N
 
-from netbox_ipam_alt_view.tree.usage import container_utilization, host_utilization, merge_intervals
+from netbox_ipam_treeview.tree.usage import container_utilization, host_utilization, merge_intervals
 
 
 def test_container_utilization_counts_union_of_children():

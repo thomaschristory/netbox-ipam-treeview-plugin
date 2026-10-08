@@ -16,7 +16,7 @@
     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
       <i class="mdi mdi-table-cog"></i> {% trans "Columns" %}
     </button>
-    <form method="post" action="{% url 'plugins:netbox_ipam_alt_view:columns' %}" class="dropdown-menu dropdown-menu-end p-3 ipt-columns">
+    <form method="post" action="{% url 'plugins:netbox_ipam_treeview:columns' %}" class="dropdown-menu dropdown-menu-end p-3 ipt-columns">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
       {% for key, label in all_columns.items %}{% if label %}

@@ -1,5 +1,5 @@
-from netbox_ipam_alt_view import __version__
-from netbox_ipam_alt_view.conf import DEFAULTS
+from netbox_ipam_treeview import __version__
+from netbox_ipam_treeview.conf import DEFAULTS
 
 
 def test_version():

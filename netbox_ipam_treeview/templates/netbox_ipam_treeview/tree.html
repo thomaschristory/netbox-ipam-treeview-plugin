@@ -4,7 +4,7 @@
 {% block title %}{% trans "Prefix Tree" %}{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{% static 'netbox_ipam_alt_view/tree.css' %}">
+  <link rel="stylesheet" href="{% static 'netbox_ipam_treeview/tree.css' %}">
 {% endblock %}
 
 {% block controls %}
@@ -39,13 +39,13 @@
 {% block content %}
   <div class="tab-pane show active" id="tree-pane" role="tabpanel" aria-labelledby="tree-tab">
     {% applied_filters model filter_form request.GET %}
-    {% include 'netbox_ipam_alt_view/inc/toolbar.html' %}
+    {% include 'netbox_ipam_treeview/inc/toolbar.html' %}
     {% if truncated %}
       <div class="alert alert-warning">
         {% blocktrans %}Showing the first {{ limit }} rows. Narrow the view with filters.{% endblocktrans %}
       </div>
     {% endif %}
-    {% include 'netbox_ipam_alt_view/inc/table.html' %}
+    {% include 'netbox_ipam_treeview/inc/table.html' %}
   </div>
   <div class="tab-pane show" id="filters-form" role="tabpanel" aria-labelledby="filters-form-tab">
     {% include 'inc/filter_list.html' %}
@@ -53,5 +53,5 @@
 {% endblock content %}
 
 {% block javascript %}
-  <script src="{% static 'netbox_ipam_alt_view/tree.js' %}"></script>
+  <script src="{% static 'netbox_ipam_treeview/tree.js' %}"></script>
 {% endblock %}

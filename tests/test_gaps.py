@@ -1,6 +1,6 @@
 from netaddr import IPNetwork as N
 
-from netbox_ipam_alt_view.tree.gaps import free_blocks, interleave
+from netbox_ipam_treeview.tree.gaps import free_blocks, interleave
 
 
 def test_free_blocks_no_children():

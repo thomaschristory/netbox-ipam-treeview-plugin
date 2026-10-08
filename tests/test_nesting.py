@@ -1,6 +1,6 @@
 from netaddr import IPNetwork as N
 
-from netbox_ipam_alt_view.tree.nesting import ANY, Item, nest
+from netbox_ipam_treeview.tree.nesting import ANY, Item, nest
 
 
 def shape(nested):

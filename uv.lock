@@ -30,7 +30,7 @@ wheels = [
 ]
 
 [[package]]
-name = "netbox-ipam-alt-view-plugin"
+name = "netbox-ipam-treeview-plugin"
 source = { editable = "." }
 
 [package.dev-dependencies]

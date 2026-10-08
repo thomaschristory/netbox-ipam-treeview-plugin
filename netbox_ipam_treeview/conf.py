@@ -1,4 +1,4 @@
-PLUGIN_NAME = "netbox_ipam_alt_view"
+PLUGIN_NAME = "netbox_ipam_treeview"
 
 DEFAULTS = {
     "show_menu_item": True,
