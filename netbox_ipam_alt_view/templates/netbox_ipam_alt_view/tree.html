@@ -1,0 +1,57 @@
+{% extends 'generic/_base.html' %}
+{% load static i18n helpers %}
+
+{% block title %}{% trans "Prefix Tree" %}{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'netbox_ipam_alt_view/tree.css' %}">
+{% endblock %}
+
+{% block controls %}
+  <div class="btn-list">
+    <a href="{% url 'ipam:prefix_list' %}{% if list_querystring %}?{{ list_querystring }}{% endif %}" class="btn btn-outline-secondary">
+      <i class="mdi mdi-format-list-bulleted"></i> {% trans "List view" %}
+    </a>
+    {% if tree_perms.add %}
+      <a href="{% url 'ipam:prefix_add' %}?return_url={{ request.get_full_path|urlencode }}" class="btn btn-primary">
+        <i class="mdi mdi-plus-thick"></i> {% trans "Add" %}
+      </a>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block tabs %}
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tree-tab" data-bs-toggle="tab" data-bs-target="#tree-pane" type="button" role="tab" aria-controls="tree-pane" aria-selected="true">
+        {% trans "Tree" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="filters-form-tab" data-bs-toggle="tab" data-bs-target="#filters-form" type="button" role="tab" aria-controls="filters-form" aria-selected="false">
+        {% trans "Filters" %}
+        {% badge filter_form.changed_data|length bg_color="primary" %}
+      </button>
+    </li>
+  </ul>
+{% endblock tabs %}
+
+{% block content %}
+  <div class="tab-pane show active" id="tree-pane" role="tabpanel" aria-labelledby="tree-tab">
+    {% applied_filters model filter_form request.GET %}
+    {% include 'netbox_ipam_alt_view/inc/toolbar.html' %}
+    {% if truncated %}
+      <div class="alert alert-warning">
+        {% blocktrans %}Showing the first {{ limit }} rows. Narrow the view with filters.{% endblocktrans %}
+      </div>
+    {% endif %}
+    {% include 'netbox_ipam_alt_view/inc/table.html' %}
+  </div>
+  <div class="tab-pane show" id="filters-form" role="tabpanel" aria-labelledby="filters-form-tab">
+    {% include 'inc/filter_list.html' %}
+  </div>
+{% endblock content %}
+
+{% block javascript %}
+  <script src="{% static 'netbox_ipam_alt_view/tree.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load i18n helpers %}{% if error %}
+<tr class="ipt-error"><td colspan="99" class="text-danger"><i class="mdi mdi-alert"></i> {% trans "Not found or no permission." %}</td></tr>
+{% else %}{% for node in nodes %}
+<tr class="ipt-row ipt-{{ node.kind }}{% if node.context %} ipt-context{% endif %}" role="row" tabindex="-1"
+    data-key="{{ node.key }}" data-parent="{{ node.parent_key|default:'' }}" data-level="{{ node.level }}" aria-level="{{ node.level|add:1 }}"
+    {% if node.has_children %}aria-expanded="{{ node.expanded|yesno:'true,false' }}"{% endif %}{% if node.expanded %} data-loaded="1"{% endif %}
+    style="--ipt-level: {{ node.level }}">
+  <td class="ipt-name">
+    {% if node.has_children %}<button type="button" class="ipt-toggle btn btn-sm btn-link p-0" tabindex="-1" aria-label="{% trans 'Expand or collapse' %}"><i class="mdi mdi-chevron-right"></i></button>{% else %}<span class="ipt-spacer"></span>{% endif %}
+    {% if node.kind == "vrf" %}
+      <i class="mdi mdi-layers-outline"></i>
+      {% if node.obj %}<a href="{{ node.obj.get_absolute_url }}">{{ node.obj.name }}</a>{% if node.obj.rd %} <span class="text-muted small">{{ node.obj.rd }}</span>{% endif %}{% else %}{% trans "Global" %}{% endif %}
+    {% elif node.kind == "aggregate" %}
+      <i class="mdi mdi-earth"></i> <a href="{{ node.obj.get_absolute_url }}">{{ node.obj.prefix }}</a>
+      <span class="badge text-bg-secondary">{{ node.obj.rir }}</span>{% if node.label %} <span class="text-muted small">· {{ node.label }}</span>{% endif %}
+    {% elif node.kind == "prefix" %}
+      <i class="mdi {% if node.has_children %}mdi-folder-network-outline{% else %}mdi-lan{% endif %}"></i>
+      <a href="{{ node.obj.get_absolute_url }}">{{ node.obj.prefix }}</a>
+    {% elif node.kind == "gap" %}
+      <i class="mdi mdi-checkbox-blank-outline"></i> {{ node.network }}
+      <span class="small">· {{ node.network.size }} {% trans "addresses free" %}</span>
+      {% if tree_perms.add %}<a class="ms-2" href="{% url 'ipam:prefix_add' %}?prefix={{ node.network|urlencode }}{% if node.vrf_id and node.vrf_id != '*' %}&vrf={{ node.vrf_id }}{% endif %}&return_url={{ return_url|urlencode }}"><i class="mdi mdi-plus"></i> {% trans "Create" %}</a>{% endif %}
+    {% elif node.kind == "more" %}
+      <i class="mdi mdi-dots-horizontal"></i> {% blocktrans with c=node.count a=node.addresses %}{{ c }} more free blocks ({{ a }} addresses){% endblocktrans %}
+    {% endif %}
+  </td>
+  {% for col in columns %}<td class="ipt-col-{{ col }}">{% if node.kind == "prefix" %}{% include "netbox_ipam_alt_view/inc/cell.html" with p=node.obj %}{% elif node.kind == "aggregate" and col == "utilization" %}{% utilization_graph node.obj.get_utilization %}{% endif %}</td>{% endfor %}
+</tr>
+{% endfor %}{% endif %}
