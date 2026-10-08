@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "netbox-ipam-alt-view-plugin"
+dynamic = ["version"]
+description = "DDI-style collapsible tree view for NetBox IPAM prefixes."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+authors = [{ name = "Thomas Christory" }]
+keywords = ["netbox", "netbox-plugin", "ipam", "ddi", "prefix", "tree"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Networking",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin"
+Repository = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin"
+Changelog = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin/blob/main/CHANGELOG.md"
+Issues = "https://github.com/thomaschristory/netbox-ipam-alt-view-plugin/issues"
+
+[project.entry-points."netbox.plugins"]
+netbox_ipam_alt_view = "netbox_ipam_alt_view:config"
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.12", "netaddr>=1.3"]
+
+[tool.hatch.version]
+path = "netbox_ipam_alt_view/version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["netbox_ipam_alt_view"]
+
+[tool.hatch.build.targets.sdist]
+# Allowlist: hatchling honours .gitignore but not .git/info/exclude.
+only-include = ["netbox_ipam_alt_view", "README.md", "CHANGELOG.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
