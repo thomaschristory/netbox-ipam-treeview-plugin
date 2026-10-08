@@ -1,4 +1,4 @@
-{% load i18n helpers %}{% if error %}
+{% load i18n helpers ipam_tree %}{% if error %}
 <tr class="ipt-error"><td colspan="99" class="text-danger"><i class="mdi mdi-alert"></i> {% trans "Not found or no permission." %}</td></tr>
 {% else %}{% for node in nodes %}
 <tr class="ipt-row ipt-{{ node.kind }}{% if node.context %} ipt-context{% endif %}" role="row" tabindex="-1"
@@ -11,19 +11,23 @@
       <i class="mdi mdi-layers-outline"></i>
       {% if node.obj %}<a href="{{ node.obj.get_absolute_url }}">{{ node.obj.name }}</a>{% if node.obj.rd %} <span class="text-muted small">{{ node.obj.rd }}</span>{% endif %}{% else %}{% trans "Global" %}{% endif %}
     {% elif node.kind == "aggregate" %}
-      <i class="mdi mdi-earth"></i> <a href="{{ node.obj.get_absolute_url }}">{{ node.obj.prefix }}</a>
+      <i class="mdi mdi-earth"></i> <a href="{% obj_url node.obj %}">{{ node.obj.prefix }}</a>
       <span class="badge text-bg-secondary">{{ node.obj.rir }}</span>{% if node.label %} <span class="text-muted small">· {{ node.label }}</span>{% endif %}
     {% elif node.kind == "prefix" %}
       <i class="mdi {% if node.has_children %}mdi-folder-network-outline{% else %}mdi-lan{% endif %}"></i>
-      <a href="{{ node.obj.get_absolute_url }}">{{ node.obj.prefix }}</a>
+      <a href="{% obj_url node.obj %}">{{ node.obj.prefix }}</a>
     {% elif node.kind == "gap" %}
       <i class="mdi mdi-checkbox-blank-outline"></i> {{ node.network }}
       <span class="small">· {{ node.network.size }} {% trans "addresses free" %}</span>
-      {% if tree_perms.add %}<a class="ms-2" href="{% url 'ipam:prefix_add' %}?prefix={{ node.network|urlencode }}{% if node.vrf_id and node.vrf_id != '*' %}&vrf={{ node.vrf_id }}{% endif %}&return_url={{ return_url|urlencode }}"><i class="mdi mdi-plus"></i> {% trans "Create" %}</a>{% endif %}
+      {% if tree_perms.add %}<a class="ms-2" href="{{ prefix_add_url }}?prefix={{ node.network|urlencode }}{% if node.vrf_id and node.vrf_id != '*' %}&vrf={{ node.vrf_id }}{% endif %}&return_url={{ return_url|urlencode }}"><i class="mdi mdi-plus"></i> {% trans "Create" %}</a>{% endif %}
     {% elif node.kind == "more" %}
       <i class="mdi mdi-dots-horizontal"></i> {% blocktrans with c=node.count a=node.addresses %}{{ c }} more free blocks ({{ a }} addresses){% endblocktrans %}
     {% endif %}
   </td>
-  {% for col in columns %}<td class="ipt-col-{{ col }}">{% if node.kind == "prefix" %}{% include "netbox_ipam_alt_view/inc/cell.html" with p=node.obj %}{% elif node.kind == "aggregate" and col == "utilization" %}{% utilization_graph node.obj.get_utilization %}{% endif %}</td>{% endfor %}
+  {% for col in columns %}<td class="ipt-col-{{ col }}">{% if node.kind == "prefix" %}{% if col == "status" %}{% badge node.obj.get_status_display bg_color=node.obj.get_status_color %}{% elif col == "utilization" %}{{ node.utilization|util_bar }}{% elif col == "vrf" %}{{ node.obj.vrf|obj_link }}{% elif col == "scope" %}{{ node.obj.scope|obj_link }}{% elif col == "vlan" %}{{ node.obj.vlan|obj_link }}{% elif col == "tenant" %}{{ node.obj.tenant|obj_link }}{% elif col == "role" %}{{ node.obj.role|obj_link }}{% elif col == "children" %}{{ node.child_count|placeholder }}{% elif col == "is_pool" %}{% checkmark node.obj.is_pool %}{% elif col == "mark_utilized" %}{% checkmark node.obj.mark_utilized %}{% elif col == "tags" %}{% for t in node.obj.tags.all %}{% tag t %}{% endfor %}{% elif col == "description" %}{{ node.obj.description|placeholder }}{% elif col == "created" %}{{ node.obj.created|isodate }}{% elif col == "last_updated" %}{{ node.obj.last_updated|isodatetime }}{% elif col == "actions" %}<span class="text-nowrap">
+{% if tree_perms.add %}<a class="btn btn-sm btn-ghost-success" title="{% trans 'Add child prefix' %}" href="{{ prefix_add_url }}?{% if node.obj.vrf_id %}vrf={{ node.obj.vrf_id }}&{% endif %}scope_type={{ node.obj.scope_type_id|default:'' }}&scope={{ node.obj.scope_id|default:'' }}&return_url={{ return_url|urlencode }}"><i class="mdi mdi-plus-thick"></i></a>{% endif %}
+{% if tree_perms.change %}<a class="btn btn-sm btn-ghost-warning" title="{% trans 'Edit' %}" href="{% obj_url node.obj 'edit' %}?return_url={{ return_url|urlencode }}"><i class="mdi mdi-pencil"></i></a>{% endif %}
+{% if tree_perms.delete %}<a class="btn btn-sm btn-ghost-danger" title="{% trans 'Delete' %}" href="{% obj_url node.obj 'delete' %}?return_url={{ return_url|urlencode }}"><i class="mdi mdi-trash-can-outline"></i></a>{% endif %}
+</span>{% endif %}{% elif node.kind == "aggregate" and col == "utilization" %}{% utilization_graph node.obj.get_utilization %}{% endif %}</td>{% endfor %}
 </tr>
 {% endfor %}{% endif %}

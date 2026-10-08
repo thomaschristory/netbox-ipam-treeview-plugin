@@ -44,7 +44,7 @@ class TreeBuilder:
         # restrict() only adds a WHERE clause for constrained permissions. Unconstrained users can rely on
         # NetBox's cached _depth; constrained users need nearest-visible-ancestor nesting instead.
         self.restricted = bool(visible.query.where)
-        self.prefixes = visible.select_related("vrf", "tenant", "role", "vlan").prefetch_related("scope")
+        self.prefixes = visible.select_related("vrf", "tenant", "role", "vlan").prefetch_related("scope", "tags")
         self.aggregates = None
         if opt(show_aggregates, "show_aggregates") and user.has_perm("ipam.view_aggregate"):
             self.aggregates = Aggregate.objects.restrict(user, "view").select_related("rir")

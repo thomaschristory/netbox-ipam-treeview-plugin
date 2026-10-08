@@ -89,3 +89,24 @@ class PermissionViewTest(TestCase):
     def test_anonymous_redirected(self):
         r = self.client.get(reverse(NS + "tree"))
         self.assertEqual(r.status_code, 302)
+
+
+class QueryScalingTest(TestCase):
+    def setUp(self):
+        self.client.force_login(superuser())
+
+    def _children_queries(self, n):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from ipam.models import Prefix
+
+        parent = Prefix.objects.create(prefix=f"10.{n}.0.0/16", status="container")
+        for i in range(n):
+            Prefix.objects.create(prefix=f"10.{n}.{i}.0/24")
+        with CaptureQueriesContext(connection) as ctx:
+            r = self.client.get(reverse(NS + "children"), {"key": pfx_key(parent.pk), "level": "0"})
+        self.assertEqual(r.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def test_children_query_count_does_not_grow_with_rows(self):
+        self.assertEqual(self._children_queries(3), self._children_queries(30))

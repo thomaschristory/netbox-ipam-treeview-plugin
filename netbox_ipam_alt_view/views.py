@@ -12,6 +12,7 @@ from ipam.models import Prefix
 from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
 from .conf import get_setting
 from .tree.builder import NodeNotFound, TreeBuilder
+from .utilization import bulk_utilization
 
 # Query parameters that belong to the tree itself, not to the prefix filterset.
 OWN_PARAMS = {"free", "key", "level", "keys"}
@@ -32,11 +33,17 @@ def _level(request):
 def table_context(request, builder, nodes, **extra):
     """Context shared by the tree page, fragment responses and detail tabs."""
     columns = resolve_columns(request.user)
+    if "utilization" in columns:
+        values = bulk_utilization([n.obj for n in nodes if n.kind == "prefix"])
+        for n in nodes:
+            if n.kind == "prefix":
+                n.utilization = values.get(n.obj.pk)
     return {
         "nodes": nodes,
         "columns": columns,
         "column_headers": [(c, COLUMNS[c]) for c in columns],
         "all_columns": COLUMNS,
+        "prefix_add_url": reverse("ipam:prefix_add"),
         "tree_perms": {a: request.user.has_perm(f"ipam.{a}_prefix") for a in ("add", "change", "delete")},
         "free": builder.show_free_space,
         "filtered": False,

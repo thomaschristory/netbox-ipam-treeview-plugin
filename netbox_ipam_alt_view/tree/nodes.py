@@ -53,4 +53,5 @@ class Node:
     count: int = 0  # "more" rows: number of hidden free blocks
     addresses: int = 0  # "more" rows: total hidden addresses
     child_count: int | None = None  # descendant count; None when the user cannot see them all
+    utilization: float | None = None  # filled by the view when the column is shown
     label: str = ""  # extra caption, e.g. the VRF name on aggregate rows in the aggregate tab

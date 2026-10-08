@@ -33,7 +33,7 @@ logs:
 	$(COMPOSE) logs -f netbox
 
 static:
-	$(EXEC) netbox $(PY) collectstatic --no-input -v 0
+	$(EXEC) -u root netbox $(PY) collectstatic --no-input -v 0
 
 seed:
 	$(EXEC) netbox $(PY) $(SEED)
