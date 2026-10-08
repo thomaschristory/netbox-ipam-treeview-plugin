@@ -1,0 +1,108 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: uv run pytest -v
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uv build
+      - run: uvx twine check --strict dist/*
+      - run: python3 dev/scripts/check_dist.py dist
+
+  netbox-integration:
+    name: integration tests on NetBox ${{ matrix.netbox }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        netbox: ["v4.5.10", "v4.6.10", "v4.7.2"]
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: netbox
+          POSTGRES_PASSWORD: netbox
+          POSTGRES_DB: netbox
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U netbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: valkey/valkey:9.1-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: plugin
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: netbox-community/netbox
+          ref: ${{ matrix.netbox }}
+          path: netbox
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install NetBox and plugin
+        run: |
+          sudo apt-get update && sudo apt-get install -y libpq-dev
+          python -m pip install --upgrade pip
+          pip install -r netbox/requirements.txt
+          pip install ./plugin
+      - name: Configure NetBox
+        run: |
+          cp netbox/netbox/netbox/configuration_testing.py netbox/netbox/netbox/configuration.py
+          cat >> netbox/netbox/netbox/configuration.py <<'EOF'
+
+          PLUGINS = ["netbox_ipam_treeview"]
+          EOF
+      - name: System check
+        run: python netbox/netbox/manage.py check
+      - name: Integration tests
+        run: python netbox/netbox/manage.py test --noinput --parallel 1 "$GITHUB_WORKSPACE/plugin/tests_netbox"
