@@ -10,6 +10,8 @@ x-netbox: &netbox
   volumes:
     - ./configuration/plugins.py:/etc/netbox/config/plugins.py:ro
     - ../netbox_ipam_alt_view:/plugin/netbox_ipam_alt_view:ro
+    # Served as-is, so CSS/JS edits are live without collectstatic.
+    - ../netbox_ipam_alt_view/static/netbox_ipam_alt_view:/opt/netbox/netbox/static/netbox_ipam_alt_view:ro
     - ../tests_netbox:/plugin/tests_netbox:ro
     - ./scripts:/plugin/dev/scripts:ro
 

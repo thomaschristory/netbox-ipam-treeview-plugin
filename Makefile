@@ -21,7 +21,6 @@ format:
 
 dev:
 	$(COMPOSE) up -d --build --wait --wait-timeout 1200
-	$(MAKE) static
 
 down:
 	$(COMPOSE) down
