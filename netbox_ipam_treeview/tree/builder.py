@@ -1,5 +1,7 @@
 """Turns permission-restricted IPAM querysets into ordered tree Node lists."""
 
+from bisect import bisect_left, bisect_right
+
 import netaddr
 from django.db.models import Exists, OuterRef
 from ipam.models import VRF, Aggregate, Prefix
@@ -50,6 +52,7 @@ class TreeBuilder:
             self.aggregates = Aggregate.objects.restrict(user, "view").select_related("rir")
         self.vrfs = VRF.objects.restrict(user, "view")
         self.truncated = False
+        self._vrf_networks = None  # lazily loaded by _foreign_occupied()
 
     # --- helpers ---------------------------------------------------------------------------------------------
 
@@ -89,12 +92,33 @@ class TreeBuilder:
             return False
         return not (self.respect_mark_utilized and isinstance(obj, Prefix) and (obj.is_pool or obj.mark_utilized))
 
+    def _foreign_occupied(self, parent_obj):
+        """Space under a global container used by VRF prefixes (NetBox counts it as used, not available)."""
+        if not (isinstance(parent_obj, Prefix) and parent_obj.vrf_id is None and parent_obj.status == "container"):
+            return []
+        if self._vrf_networks is None:
+            nets = sorted(
+                (
+                    netaddr.IPNetwork(n)
+                    for n in self.prefixes.filter(vrf__isnull=False).values_list("prefix", flat=True)
+                ),
+                key=lambda n: (n.version, n.first),
+            )
+            self._vrf_networks = (nets, [(n.version, n.first) for n in nets])
+        nets, keys = self._vrf_networks
+        parent = netaddr.IPNetwork(parent_obj.prefix)
+        lo = bisect_left(keys, (parent.version, parent.first))
+        hi = bisect_right(keys, (parent.version, parent.last))
+        return [n for n in nets[lo:hi] if n.last <= parent.last and n.prefixlen > parent.prefixlen]
+
     def _with_gaps(self, parent_obj, parent_key, child_nodes, level, vrf_id):
+        allowed = self._gaps_allowed(parent_obj)
         items = interleave(
             parent_obj.prefix,
             [(n.network, n) for n in child_nodes],
             self.max_gap_rows,
-            with_gaps=self._gaps_allowed(parent_obj),
+            with_gaps=allowed,
+            occupied=self._foreign_occupied(parent_obj) if allowed else (),
         )
         out = []
         for kind, payload in items:
@@ -169,10 +193,12 @@ class TreeBuilder:
             raise NodeNotFound(pk) from None
 
     def _get_aggregate(self, pk):
-        if self.aggregates is None:
-            raise NodeNotFound(pk)
+        # Aggregate nodes can be addressed directly (the aggregate tab) even when the aggregate level is hidden.
+        aggregates = self.aggregates
+        if aggregates is None:
+            aggregates = Aggregate.objects.restrict(self.user, "view")
         try:
-            return self.aggregates.get(pk=pk)
+            return aggregates.get(pk=pk)
         except Aggregate.DoesNotExist:
             raise NodeNotFound(pk) from None
 
@@ -309,7 +335,19 @@ class TreeBuilder:
         nodes = self._emit(
             nested, level=level + 1, parent_key=key, parent_obj=obj, vrf_id=vrf_id, gaps=not self.truncated
         )
+        if self.truncated:
+            self._mark_partial(nodes)
         return self._prune_hidden_children(nodes)
+
+    @staticmethod
+    def _mark_partial(nodes):
+        """The ancestors of the last loaded row may be missing children: let the client reload them on expand."""
+        by_key = {n.key: n for n in nodes}
+        last = next((n for n in reversed(nodes) if n.kind in ("prefix", "aggregate")), None)
+        key = last.parent_key if last else None
+        while key in by_key:
+            by_key[key].partial = True
+            key = by_key[key].parent_key
 
     def full_tree(self):
         """Roots plus every root's subtree, sharing one row budget."""
@@ -331,7 +369,8 @@ class TreeBuilder:
 
     def expand(self, keys):
         """Roots, with every node whose key is in `keys` expanded (restores a saved expansion state)."""
-        keys = set(list(keys)[:500])
+        # Keep the client's order (ancestors are expanded before descendants) when capping.
+        keys = set(list(dict.fromkeys(keys))[:500])
         out = []
 
         def visit(nodes):

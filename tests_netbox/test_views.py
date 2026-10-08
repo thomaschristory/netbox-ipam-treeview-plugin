@@ -110,3 +110,26 @@ class QueryScalingTest(TestCase):
 
     def test_children_query_count_does_not_grow_with_rows(self):
         self.assertEqual(self._children_queries(3), self._children_queries(30))
+
+
+class ReviewViewFixesTest(TestCase):
+    def setUp(self):
+        self.client.force_login(superuser())
+        make_tree()
+
+    def test_list_paging_params_do_not_trigger_filtered_mode(self):
+        for params in ({"per_page": "50"}, {"sort": "-prefix"}, {"page": "2"}):
+            r = self.client.get(reverse(NS + "tree"), params)
+            self.assertContains(r, 'data-filtered="0"', msg_prefix=str(params))
+
+    def test_list_button_drops_paging_params(self):
+        r = self.client.get(reverse("ipam:prefix_list") + "?status=active&per_page=50&sort=prefix&page=2")
+        self.assertContains(r, reverse(NS + "tree") + "?status=active")
+        self.assertNotContains(r, reverse(NS + "tree") + "?status=active&amp;per_page")
+
+
+class AnonymousColumnsTest(TestCase):
+    def test_anonymous_columns_post_is_rejected(self):
+        with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["*"]):
+            r = self.client.post(reverse(NS + "columns"), {"columns": ["status"]})
+        self.assertIn(r.status_code, (302, 403))

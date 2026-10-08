@@ -38,3 +38,8 @@ def test_interleave_caps_gaps():
 def test_interleave_ipv6_children_sorted():
     out = interleave(N("fd00::/16"), [(N("fd00:2::/32"), "b"), (N("fd00:1::/32"), "a")], max_gaps=100)
     assert [p for k, p in out if k == "child"] == ["a", "b"]
+
+
+def test_interleave_occupied_space_is_not_free():
+    out = interleave(N("10.0.0.0/23"), [(N("10.0.0.0/24"), "a")], max_gaps=10, occupied=[N("10.0.1.0/25")])
+    assert out == [("child", "a"), ("gap", N("10.0.1.128/25"))]

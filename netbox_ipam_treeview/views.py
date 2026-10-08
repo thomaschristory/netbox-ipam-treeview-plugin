@@ -17,8 +17,8 @@ from .conf import get_setting
 from .tree.builder import NodeNotFound, TreeBuilder
 from .utilization import bulk_utilization
 
-# Query parameters that belong to the tree itself, not to the prefix filterset.
-OWN_PARAMS = {"free", "key", "level", "keys"}
+# List-view parameters (paging, sorting, export) that are not filters; the list's "Tree view" button drops them too.
+LIST_ONLY_PARAMS = {"page", "per_page", "sort", "ordering", "export"}
 
 
 def _free(request):
@@ -58,6 +58,14 @@ def table_context(request, builder, nodes, **extra):
     }
 
 
+def filter_querystring(params):
+    """The querystring without list-only parameters (page, sorting, export)."""
+    params = params.copy()
+    for key in LIST_ONLY_PARAMS:
+        params.pop(key, None)
+    return params.urlencode()
+
+
 class TreeAccessMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated and settings.LOGIN_REQUIRED:
@@ -82,8 +90,9 @@ class TreeAccessMixin(AccessMixin):
 class TreeView(TreeAccessMixin, View):
     def get(self, request):
         builder = self.builder(request)
-        filter_params = {k for k, v in request.GET.lists() if k not in OWN_PARAMS and any(v)}
         filterset = PrefixFilterSet(request.GET, queryset=builder.prefixes)
+        # Only parameters the prefix filterset understands put the tree in filtered mode.
+        filter_params = {k for k, v in request.GET.lists() if k in filterset.filters and any(v)}
         filtered = bool(filter_params) and filterset.is_valid()
         nodes = builder.filtered(filterset.qs) if filtered else builder.roots()
         context = table_context(
@@ -130,6 +139,8 @@ class ExpandView(TreeAccessMixin, View):
 
 class ColumnsView(TreeAccessMixin, View):
     def post(self, request):
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()  # anonymous users (LOGIN_REQUIRED=False) have no stored preferences
         columns = [c for c in request.POST.getlist("columns") if c in COLUMNS]
         request.user.config.set(USER_CONFIG_PATH, columns or None, commit=True)
         next_url = request.POST.get("next", "")

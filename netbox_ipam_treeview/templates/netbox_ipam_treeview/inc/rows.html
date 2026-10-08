@@ -3,7 +3,7 @@
 {% else %}{% for node in nodes %}
 <tr class="ipt-row ipt-{{ node.kind }}{% if node.context %} ipt-context{% endif %}" role="row" tabindex="-1"
     data-key="{{ node.key }}" data-parent="{{ node.parent_key|default:'' }}" data-level="{{ node.level }}" aria-level="{{ node.level|add:1 }}"
-    {% if node.has_children %}aria-expanded="{{ node.expanded|yesno:'true,false' }}"{% endif %}{% if node.expanded %} data-loaded="1"{% endif %}
+    {% if node.has_children %}aria-expanded="{{ node.expanded|yesno:'true,false' }}"{% endif %}{% if node.expanded and not node.partial %} data-loaded="1"{% endif %}
     style="--ipt-level: {{ node.level }}">
   <td class="ipt-name">
     {% if node.has_children %}<button type="button" class="ipt-toggle btn btn-sm btn-link p-0" tabindex="-1" aria-label="{% trans 'Expand or collapse' %}"><i class="mdi mdi-chevron-right"></i></button>{% else %}<span class="ipt-spacer"></span>{% endif %}

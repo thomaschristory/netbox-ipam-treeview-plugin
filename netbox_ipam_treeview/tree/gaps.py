@@ -13,8 +13,10 @@ def free_blocks(parent, children):
     return sorted(free.iter_cidrs(), key=_sort_key)
 
 
-def interleave(parent, children, max_gaps, with_gaps=True):
+def interleave(parent, children, max_gaps, with_gaps=True, occupied=()):
     """Merge children (network, payload) and the free blocks of `parent` in address order.
+
+    `occupied` networks are used space that is not shown as children (e.g. other VRFs under a global container).
 
     Returns ("child", payload) and ("gap", IPNetwork) items. Gaps beyond `max_gaps` collapse into one
     trailing ("more", (count, addresses)) item.
@@ -22,7 +24,7 @@ def interleave(parent, children, max_gaps, with_gaps=True):
     kids = sorted(children, key=lambda c: _sort_key(netaddr.IPNetwork(c[0])))
     if not with_gaps:
         return [("child", payload) for _, payload in kids]
-    gaps = free_blocks(parent, [c[0] for c in kids])
+    gaps = free_blocks(parent, [c[0] for c in kids] + list(occupied))
     shown, hidden = gaps[:max_gaps], gaps[max_gaps:]
     out, gi = [], 0
     for net, payload in kids:

@@ -49,6 +49,7 @@ class Node:
     vrf_id: Any = None
     has_children: bool = False
     expanded: bool = False
+    partial: bool = False  # expanded, but only some children were loaded (row cap reached)
     context: bool = False  # ancestor shown only to give a filtered match its place in the tree
     count: int = 0  # "more" rows: number of hidden free blocks
     addresses: int = 0  # "more" rows: total hidden addresses

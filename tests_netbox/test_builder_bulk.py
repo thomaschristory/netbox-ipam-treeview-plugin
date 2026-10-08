@@ -77,3 +77,37 @@ class SubtreeTest(TestCase):
 
     def test_filtered_empty(self):
         self.assertEqual(TreeBuilder(self.user).filtered(Prefix.objects.none()), [])
+
+
+class ReviewFixesTest(TestCase):
+    def setUp(self):
+        self.t = make_tree()
+        self.user = superuser()
+
+    def test_expand_keeps_key_order_when_capped(self):
+        keys = [vrf_key(None)] + [f"pfx:{900000 + i}" for i in range(600)]
+        nodes = TreeBuilder(self.user, show_free_space=False).expand(keys)
+        self.assertTrue(nodes[0].expanded)
+
+    def test_aggregate_children_without_aggregate_level(self):
+        from netbox_ipam_treeview.tree.nodes import agg_key
+
+        b = TreeBuilder(self.user, show_aggregates=False, show_free_space=False)
+        kids = b.children(agg_key(self.t["agg"].pk, None), 0)
+        self.assertEqual([n.obj.pk for n in kids], [self.t["p16"].pk])
+
+    def test_global_container_counts_vrf_prefixes_as_used(self):
+        from ipam.models import VRF
+
+        blue = VRF.objects.create(name="BLUE")
+        g = Prefix.objects.create(prefix="172.20.0.0/23", status="container")
+        Prefix.objects.create(prefix="172.20.0.0/24", vrf=blue)
+        nodes = TreeBuilder(self.user).children(pfx_key(g.pk), 0)
+        self.assertEqual([(n.kind, str(n.network)) for n in nodes], [("gap", "172.20.1.0/24")])
+
+    def test_truncated_subtree_marks_partial_ancestors(self):
+        b = TreeBuilder(self.user, limit=2)
+        nodes = b.subtree(vrf_key(None), 0)
+        self.assertTrue(b.truncated)
+        partial = [n.key for n in nodes if n.partial]
+        self.assertIn(pfx_key(self.t["p16"].pk), partial)

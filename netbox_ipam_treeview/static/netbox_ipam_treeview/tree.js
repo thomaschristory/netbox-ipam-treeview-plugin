@@ -21,6 +21,7 @@
   };
 
   const FREE_KEY = "ipam-tree:free";
+  const MAX_SAVED_KEYS = 200; // keeps the restore URL short; ancestors come first in DOM order
 
   function init(table) {
     const tbody = table.tBodies[0];
@@ -28,7 +29,12 @@
     const filtered = ds.filtered === "1";
     const onPage = ds.rootKey === "__root__" && ds.storageKey === "ipam-tree:page";
     const stateKey = ds.storageKey;
-    const expanded = new Set(store.get(stateKey, []));
+    // Saved state: {all: true} after "Expand all", otherwise {keys: [...]} (a bare array is the old format).
+    const saved = store.get(stateKey, {});
+    const savedAll = !Array.isArray(saved) && saved.all === true;
+    const expanded = new Set(Array.isArray(saved) ? saved : saved.keys || []);
+    let allExpanded = false;
+    let interacted = false;
     const level = (row) => Number(row.dataset.level);
     const rows = () => Array.from(tbody.querySelectorAll("tr.ipt-row"));
     const isOpen = (row) => row.getAttribute("aria-expanded") === "true";
@@ -55,7 +61,15 @@
     }
 
     function save() {
-      if (!filtered) store.set(stateKey, Array.from(expanded));
+      if (filtered || !onPage) return;
+      if (allExpanded) {
+        store.set(stateKey, { all: true });
+        return;
+      }
+      const inOrder = rows()
+        .map((r) => r.dataset.key)
+        .filter((k) => expanded.has(k));
+      store.set(stateKey, { keys: inOrder.slice(0, MAX_SAVED_KEYS) });
     }
 
     // Show the descendants of `row` that should be visible given each ancestor's expanded state.
@@ -111,6 +125,7 @@
     }
 
     async function setExpanded(row, open) {
+      allExpanded = false;
       if (open && !row.dataset.loaded && !(await load(row, ds.childrenUrl))) return;
       if (open && descendants(row).length === 0) {
         // Nothing visible underneath (e.g. children hidden by permissions): drop the toggle.
@@ -135,6 +150,14 @@
     }
 
     async function expandAll() {
+      if (filtered) {
+        // Keep the filtered result: reopen everything already loaded instead of fetching the whole tree.
+        rows().forEach((r) => {
+          if (r.dataset.loaded) r.setAttribute("aria-expanded", "true");
+          r.classList.remove("ipt-hidden");
+        });
+        return;
+      }
       if (!onPage) {
         // Detail tabs: expand each top-level row of this table in turn.
         const top = Math.min(...rows().map(level));
@@ -148,6 +171,7 @@
         tbody.innerHTML = res.html;
         banner(res.truncated);
         rememberLoaded(rows());
+        allExpanded = true;
         save();
       } finally {
         table.classList.remove("ipt-busy");
@@ -163,20 +187,26 @@
         r.classList.toggle("ipt-hidden", level(r) > top);
       });
       expanded.clear();
+      allExpanded = false;
       save();
     }
 
     async function restore() {
-      if (filtered || !onPage || expanded.size === 0) return;
-      const res = await fetchRows(url(ds.expandUrl, { keys: Array.from(expanded).join(",") }));
-      if (res.ok && res.html.trim()) {
-        tbody.innerHTML = res.html;
-        banner(res.truncated);
-      }
+      if (filtered || !onPage || (!savedAll && expanded.size === 0)) return;
+      const res = savedAll
+        ? await fetchRows(url(ds.subtreeUrl, { key: "__root__" }))
+        : await fetchRows(url(ds.expandUrl, { keys: Array.from(expanded).slice(0, MAX_SAVED_KEYS).join(",") }));
+      // Never overwrite what the user did while the restore was loading.
+      if (interacted || !res.ok || !res.html.trim()) return;
+      tbody.innerHTML = res.html;
+      banner(res.truncated);
+      allExpanded = savedAll;
+      if (savedAll) rememberLoaded(rows());
     }
 
     table.addEventListener("click", (e) => {
       const btn = e.target.closest(".ipt-toggle");
+      if (btn) interacted = true;
       if (!btn) return;
       const row = btn.closest("tr");
       if (e.altKey) expandSubtree(row);
@@ -186,6 +216,7 @@
     table.addEventListener("keydown", (e) => {
       const row = e.target.closest("tr.ipt-row");
       if (!row) return;
+      interacted = true;
       const visible = rows().filter((r) => !r.classList.contains("ipt-hidden"));
       const i = visible.indexOf(row);
       const focus = (r) => {
@@ -223,8 +254,12 @@
       e.preventDefault();
     });
 
-    document.querySelectorAll('[data-ipt-action="expand-all"]').forEach((b) => b.addEventListener("click", expandAll));
-    document.querySelectorAll('[data-ipt-action="collapse-all"]').forEach((b) => b.addEventListener("click", collapseAll));
+    const mark = (fn) => () => {
+      interacted = true;
+      fn();
+    };
+    document.querySelectorAll('[data-ipt-action="expand-all"]').forEach((b) => b.addEventListener("click", mark(expandAll)));
+    document.querySelectorAll('[data-ipt-action="collapse-all"]').forEach((b) => b.addEventListener("click", mark(collapseAll)));
     document.querySelectorAll('[data-ipt-action="toggle-free"]').forEach((sw) => {
       sw.addEventListener("change", () => {
         store.set(FREE_KEY, sw.checked);

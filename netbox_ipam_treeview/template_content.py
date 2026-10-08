@@ -12,7 +12,9 @@ class PrefixListTreeButton(PluginTemplateExtension):
     def list_buttons(self):
         if not get_setting("show_list_toggle"):
             return ""
-        query = self.context["request"].GET.urlencode()
+        from .views import filter_querystring
+
+        query = filter_querystring(self.context["request"].GET)
         url = reverse("plugins:netbox_ipam_treeview:tree") + (f"?{query}" if query else "")
         return self.render("netbox_ipam_treeview/inc/list_button.html", extra_context={"tree_url": url})
 

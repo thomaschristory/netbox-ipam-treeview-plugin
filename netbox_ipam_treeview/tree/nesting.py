@@ -48,6 +48,12 @@ def nest(items):
     for item in ordered:
         idx = len(flat)
         if item.vrf_id is ANY:
+            for stack in stacks.values():
+                while stack and not _contains(flat[stack[-1]].item, item):
+                    stack.pop()
+            if any(stacks.values()):
+                # Inside an open prefix (e.g. 0.0.0.0/0): the prefix keeps its children, the aggregate is dropped.
+                continue
             stacks, current_any = {}, idx
             flat.append(Nested(item, 0, None))
             continue

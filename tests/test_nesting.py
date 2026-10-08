@@ -65,3 +65,16 @@ def test_nest_aggregate_ends_scope():
         ]
     )
     assert shape(res) == [("agg", 0, None), ("in", 1, "agg"), ("out", 0, None)]
+
+
+def test_nest_aggregate_inside_open_prefix_is_dropped():
+    # A prefix wider than an aggregate (e.g. 0.0.0.0/0) keeps its children; the aggregate is not a root under it.
+    res = nest(
+        [
+            Item(N("10.0.0.0/7"), "p7", None),
+            Item(N("10.0.0.0/8"), "agg", ANY, inclusive=True),
+            Item(N("10.1.0.0/16"), "p16", None),
+            Item(N("11.0.0.0/16"), "p11", None),
+        ]
+    )
+    assert shape(res) == [("p7", 0, None), ("p16", 1, "p7"), ("p11", 1, "p7")]
