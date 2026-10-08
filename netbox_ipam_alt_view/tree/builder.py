@@ -5,7 +5,7 @@ from ipam.models import VRF, Aggregate, Prefix
 
 from ..conf import get_setting
 from .gaps import interleave
-from .nesting import Item, nest
+from .nesting import ANY, Item, nest
 from .nodes import ALL_VRFS, Node, agg_key, parse_key, pfx_key, vrf_key
 
 
@@ -210,3 +210,168 @@ class TreeBuilder:
             node.label = names.get(v, "Global")
             nodes.append(node)
         return nodes
+
+    # --- bulk loading ----------------------------------------------------------------------------------------
+
+    def _emit(self, nested, *, level, parent_key, parent_obj, vrf_id, gaps, matches=None):
+        """Turn nest() output into Nodes in display order, children of each loaded parent marked expanded.
+
+        `matches` (filtered mode) is the set of matching prefix pks; every other node is a context row.
+        """
+        children: dict[int | None, list[int]] = {}
+        for i, n in enumerate(nested):
+            children.setdefault(n.parent, []).append(i)
+        out = []
+
+        def make(i, lvl, pkey):
+            kind, obj, vid = nested[i].item.payload
+            is_agg = kind == "aggregate"
+            node = self._agg_node(obj, vid, lvl, pkey) if is_agg else self._prefix_node(obj, lvl, pkey)
+            if matches is not None:
+                node.context = not (kind == "prefix" and obj.pk in matches)
+            return node
+
+        def walk(indexes, lvl, pkey, pobj, vid):
+            nodes = [make(i, lvl, pkey) for i in indexes]
+            index_of = {id(node): i for node, i in zip(nodes, indexes, strict=True)}
+            seq = self._with_gaps(pobj, pkey, nodes, lvl, vid) if gaps and pobj is not None else nodes
+            for node in seq:
+                out.append(node)
+                i = index_of.get(id(node))
+                if i is not None and i in children:
+                    node.expanded = True
+                    walk(children[i], lvl + 1, node.key, nested[i].item.payload[1], node.vrf_id)
+
+        walk(children.get(None, []), level, parent_key, parent_obj, vrf_id)
+        return out
+
+    def _aggregate_items(self, vrf_id):
+        if self.aggregates is None:
+            return []
+        return [Item(a.prefix, ("aggregate", a, vrf_id), ANY, inclusive=True) for a in self.aggregates]
+
+    @staticmethod
+    def _drop_empty_aggregates(nested):
+        parents = {n.parent for n in nested if n.parent is not None}
+        keep = [n.item for i, n in enumerate(nested) if n.item.payload[0] != "aggregate" or i in parents]
+        return nest(keep)
+
+    def subtree(self, key, level):
+        """Every visible descendant of `key` (capped at limit), in display order."""
+        kind, obj_id, vrf_id = self._parse(key)
+        if kind == "prefix":
+            obj = self._get_prefix(obj_id)
+            vrf_id = obj.vrf_id
+            qs = self.prefixes.filter(vrf_id=obj.vrf_id, prefix__net_contained=str(obj.prefix))
+        elif kind == "aggregate":
+            self._check_vrf(vrf_id)
+            obj = self._get_aggregate(obj_id)
+            qs = self._in_vrf(self.prefixes, vrf_id).filter(prefix__net_contained_or_equal=str(obj.prefix))
+        else:
+            self._check_vrf(vrf_id)
+            obj = None
+            qs = self._in_vrf(self.prefixes, vrf_id)
+        rows = list(qs.order_by("prefix")[: self.limit + 1])
+        if len(rows) > self.limit:
+            self.truncated = True
+            rows = rows[: self.limit]
+        items = [Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in rows]
+        if kind == "vrf":
+            items += self._aggregate_items(vrf_id)
+        nested = self._drop_empty_aggregates(nest(items))
+        # Free space is only shown when every child is loaded; a truncated load would show hidden children as free.
+        return self._emit(
+            nested, level=level + 1, parent_key=key, parent_obj=obj, vrf_id=vrf_id, gaps=not self.truncated
+        )
+
+    def full_tree(self):
+        """Roots plus every root's subtree, sharing one row budget."""
+        out, budget, limit = [], self.limit, self.limit
+        for root in self.roots():
+            out.append(root)
+            if not root.has_children:
+                continue
+            if budget <= 0:
+                self.truncated = True
+                continue
+            self.limit = budget
+            sub = self.subtree(root.key, root.level)
+            budget -= sum(n.kind in ("prefix", "aggregate") for n in sub)
+            root.expanded = bool(sub)
+            out.extend(sub)
+        self.limit = limit
+        return out
+
+    def expand(self, keys):
+        """Roots, with every node whose key is in `keys` expanded (restores a saved expansion state)."""
+        keys = set(list(keys)[:500])
+        out = []
+
+        def visit(nodes):
+            for node in nodes:
+                if len(out) >= self.limit:
+                    self.truncated = True
+                    return
+                out.append(node)
+                if node.has_children and node.key in keys:
+                    try:
+                        kids = self.children(node.key, node.level)
+                    except NodeNotFound:
+                        continue
+                    node.expanded = True
+                    visit(kids)
+
+        visit(self.roots())
+        return out
+
+    def filtered(self, match_qs):
+        """Matching prefixes with their ancestors as greyed context rows, fully expanded, no free space."""
+        rows = list(self.prefixes.filter(pk__in=match_qs.order_by().values("pk")).order_by("prefix")[: self.limit + 1])
+        self.truncated = len(rows) > self.limit
+        rows = rows[: self.limit]
+        if not rows:
+            return []
+        matches = {p.pk for p in rows}
+        vrf_ids = {p.vrf_id for p in rows}
+        candidates = [
+            p for v in vrf_ids for p in self._in_vrf(self.prefixes, v).filter(_children__gt=0).exclude(pk__in=matches)
+        ]
+        nested = nest(Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in rows + candidates)
+        keep = set()
+        for i, n in enumerate(nested):
+            j = i if n.item.payload[1].pk in matches else None
+            while j is not None and j not in keep:
+                keep.add(j)
+                j = nested[j].parent
+        kept = [nested[i].item.payload[1] for i in sorted(keep)]
+
+        if not self.group_by_vrf:
+            items = [Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in kept]
+            nested = self._drop_empty_aggregates(nest(items + self._aggregate_items(ALL_VRFS)))
+            return self._emit(
+                nested, level=0, parent_key=None, parent_obj=None, vrf_id=ALL_VRFS, gaps=False, matches=matches
+            )
+
+        out = []
+        groups: dict = {}
+        for p in kept:
+            groups.setdefault(p.vrf_id, []).append(p)
+        for vrf_id in sorted(groups, key=lambda v: (v is not None, groups[v][0].vrf.name if v else "")):
+            prefixes = groups[vrf_id]
+            vrf_node = Node(
+                "vrf",
+                vrf_key(vrf_id),
+                0,
+                obj=prefixes[0].vrf,
+                vrf_id=vrf_id,
+                has_children=True,
+                expanded=True,
+                context=True,
+            )
+            out.append(vrf_node)
+            items = [Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in prefixes]
+            nested = self._drop_empty_aggregates(nest(items + self._aggregate_items(vrf_id)))
+            out += self._emit(
+                nested, level=1, parent_key=vrf_node.key, parent_obj=None, vrf_id=vrf_id, gaps=False, matches=matches
+            )
+        return out
