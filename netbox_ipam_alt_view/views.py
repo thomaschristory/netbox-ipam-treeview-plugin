@@ -1,13 +1,16 @@
 from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin
-from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext_lazy as _
 from django.views import View
 from ipam.filtersets import PrefixFilterSet
 from ipam.forms import PrefixFilterForm
-from ipam.models import Prefix
+from ipam.models import VRF, Aggregate, Prefix
+from netbox.views import generic
+from utilities.views import ViewTab, register_model_view
 
 from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
 from .conf import get_setting
@@ -133,3 +136,90 @@ class ColumnsView(TreeAccessMixin, View):
         if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
             next_url = reverse("plugins:netbox_ipam_alt_view:tree")
         return HttpResponseRedirect(next_url)
+
+
+#
+# Tree tabs on core object views
+#
+
+
+class _TreeTab(generic.ObjectView):
+    template_name = "netbox_ipam_alt_view/tab.html"
+    base_template = "generic/object.html"
+    setting = None
+
+    def get(self, request, *args, **kwargs):
+        if not get_setting(self.setting):
+            raise Http404
+        return super().get(request, *args, **kwargs)
+
+    def tree_nodes(self, builder, instance):
+        """Return (nodes, root_key) for this object's tree."""
+        raise NotImplementedError
+
+    def get_extra_context(self, request, instance):
+        builder = TreeBuilder(request.user, show_free_space=_free(request))
+        try:
+            nodes, root_key = self.tree_nodes(builder, instance)
+        except NodeNotFound:
+            nodes, root_key = [], "__root__"
+        return table_context(
+            request,
+            builder,
+            nodes,
+            base_template=self.base_template,
+            root_key=root_key,
+            storage_key=f"ipam-tree:{instance._meta.model_name}:{instance.pk}",
+        )
+
+
+def _tab(setting):
+    return ViewTab(label=_("Tree"), permission="ipam.view_prefix", weight=450, visible=lambda obj: get_setting(setting))
+
+
+def _expanded(builder, root):
+    """The root and its children, with aggregate children opened too so prefixes are visible at once."""
+    kids = builder.children(root.key, root.level) if root.has_children else []
+    root.expanded = bool(kids)
+    nodes = [root]
+    for kid in kids:
+        nodes.append(kid)
+        if kid.kind == "aggregate":
+            grandkids = builder.children(kid.key, kid.level)
+            kid.expanded = bool(grandkids)
+            nodes += grandkids
+    return nodes, root.key
+
+
+@register_model_view(Prefix, "tree", path="tree")
+class PrefixTreeTab(_TreeTab):
+    queryset = Prefix.objects.all()
+    base_template = "ipam/prefix/base.html"
+    setting = "show_prefix_tab"
+    tab = _tab("show_prefix_tab")
+
+    def tree_nodes(self, builder, instance):
+        return _expanded(builder, builder.node_for(builder._get_prefix(instance.pk)))
+
+
+@register_model_view(Aggregate, "tree", path="tree")
+class AggregateTreeTab(_TreeTab):
+    queryset = Aggregate.objects.all()
+    setting = "show_aggregate_tab"
+    tab = _tab("show_aggregate_tab")
+
+    def tree_nodes(self, builder, instance):
+        roots = builder.aggregate_roots(instance)
+        if len(roots) == 1:
+            return _expanded(builder, roots[0])
+        return roots, "__root__"
+
+
+@register_model_view(VRF, "tree", path="tree")
+class VRFTreeTab(_TreeTab):
+    queryset = VRF.objects.all()
+    setting = "show_vrf_tab"
+    tab = _tab("show_vrf_tab")
+
+    def tree_nodes(self, builder, instance):
+        return _expanded(builder, builder.node_for(instance))
