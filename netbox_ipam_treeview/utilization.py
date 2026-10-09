@@ -10,10 +10,7 @@ from django.db.models import Q
 from ipam.choices import PrefixStatusChoices
 from ipam.models import IPAddress, IPRange, Prefix
 
-from .tree.usage import container_utilization, host_utilization
-
-# Above this many disjoint blocks, query one spanning block per IP version instead of OR-ing them all.
-MAX_COVER_CLAUSES = 64
+from .tree.usage import container_utilization, cover_blocks, host_utilization
 
 
 def _vrf_q(vrf_id):
@@ -22,13 +19,7 @@ def _vrf_q(vrf_id):
 
 def _cover(prefixes):
     """Minimal CIDR blocks covering every prefix; each prefix lies inside exactly one of them."""
-    blocks = netaddr.IPSet(p.prefix for p in prefixes).iter_cidrs()
-    if len(blocks) > MAX_COVER_CLAUSES:
-        by_version = defaultdict(list)
-        for b in blocks:
-            by_version[b.version].append(b)
-        blocks = [netaddr.spanning_cidr(bs) for bs in by_version.values()]
-    return blocks
+    return cover_blocks(p.prefix for p in prefixes)
 
 
 def _within(field, blocks):

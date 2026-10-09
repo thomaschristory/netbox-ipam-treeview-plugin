@@ -4,6 +4,21 @@ from bisect import bisect_left, bisect_right
 
 import netaddr
 
+# Above this many disjoint blocks, cover_blocks() returns one spanning block per IP version instead.
+MAX_COVER_CLAUSES = 64
+
+
+def cover_blocks(networks, max_blocks=MAX_COVER_CLAUSES):
+    """Minimal CIDR blocks covering every network; each network lies inside exactly one of them."""
+    blocks = netaddr.IPSet(networks).iter_cidrs()
+    if len(blocks) > max_blocks:
+        by_version = {}
+        for b in blocks:
+            by_version.setdefault(b.version, []).append(b)
+        # spanning_cidr() needs at least two networks; a family that merged into one block is its own cover.
+        blocks = [bs[0] if len(bs) == 1 else netaddr.spanning_cidr(bs) for bs in by_version.values()]
+    return blocks
+
 
 def merge_intervals(intervals):
     """Merge overlapping or adjacent (start, end) integer intervals."""
