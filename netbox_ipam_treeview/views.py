@@ -70,7 +70,8 @@ def filter_querystring(params):
 class TreeAccessMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
         # handle_no_permission() redirects anonymous users to login and raises PermissionDenied for authenticated
-        # ones, so NetBox renders its own 403 page (fragment requests just see a non-2xx status in tree.js).
+        # ones, so NetBox renders its own 403 page. tree.js treats a 403 fragment as a failed load and reloads the
+        # page when a fragment request was redirected to login.
         if not request.user.is_authenticated and settings.LOGIN_REQUIRED:
             return self.handle_no_permission()
         if not request.user.has_perm("ipam.view_prefix"):

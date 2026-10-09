@@ -12,6 +12,7 @@
       <label class="form-check-label" for="ipt-free">{% trans "Free space" %}</label>
     </div>
   {% endif %}
+  {% if request.user.is_authenticated %}{# anonymous users (LOGIN_REQUIRED=False) cannot store column preferences #}
   <div class="dropdown ms-auto">
     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
       <i class="mdi mdi-table-cog"></i> {% trans "Columns" %}
@@ -29,4 +30,5 @@
       <button type="submit" class="btn btn-sm btn-primary mt-2">{% trans "Apply" %}</button>
     </form>
   </div>
+  {% endif %}
 </div>

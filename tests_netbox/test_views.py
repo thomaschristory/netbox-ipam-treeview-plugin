@@ -91,7 +91,14 @@ class PermissionViewTest(TestCase):
         self.client.force_login(user)
         for name in ("children", "subtree", "expand"):
             r = self.client.get(reverse(NS + name), {"key": "__root__"})
-            self.assertEqual(r.status_code, 403, name)
+            self.assertContains(r, "You do not have permission", status_code=403, msg_prefix=name)
+        r = self.client.post(reverse(NS + "columns"), {"columns": ["status"]})
+        self.assertContains(r, "You do not have permission", status_code=403)
+
+    def test_anonymous_without_permission_redirected(self):
+        with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=[]):
+            r = self.client.get(reverse(NS + "tree"))
+        self.assertEqual(r.status_code, 302)
 
     @override_settings(LOGIN_REQUIRED=True)
     def test_anonymous_redirected(self):
@@ -140,4 +147,9 @@ class AnonymousColumnsTest(TestCase):
     def test_anonymous_columns_post_is_rejected(self):
         with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["*"]):
             r = self.client.post(reverse(NS + "columns"), {"columns": ["status"]})
-        self.assertIn(r.status_code, (302, 403))
+        self.assertContains(r, "You do not have permission", status_code=403)
+
+    def test_anonymous_has_no_columns_picker(self):
+        with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["*"]):
+            r = self.client.get(reverse(NS + "tree"))
+        self.assertNotContains(r, reverse(NS + "columns"))

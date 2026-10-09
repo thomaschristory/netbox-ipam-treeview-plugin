@@ -51,6 +51,12 @@
         headers: { "X-Requested-With": "XMLHttpRequest", "X-Tree-Page": location.pathname + location.search },
         credentials: "same-origin",
       });
+      // Fragment endpoints never redirect: a redirect means the session expired and fetch() followed it to the
+      // login page. Reload so the browser lands on the login form (with next= this page), not rows of login HTML.
+      if (resp.redirected) {
+        location.reload();
+        return { ok: false, html: "", truncated: false };
+      }
       return { ok: resp.ok, html: await resp.text(), truncated: resp.headers.get("X-Tree-Truncated") === "1" };
     }
 
