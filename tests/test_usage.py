@@ -1,7 +1,13 @@
 from netaddr import IPAddress as A
 from netaddr import IPNetwork as N
 
-from netbox_ipam_treeview.tree.usage import container_utilization, host_utilization, merge_intervals
+from netbox_ipam_treeview.tree.usage import (
+    MAX_COVER_CLAUSES,
+    container_utilization,
+    cover_blocks,
+    host_utilization,
+    merge_intervals,
+)
 
 
 def test_container_utilization_counts_union_of_children():
@@ -35,3 +41,22 @@ def test_host_utilization_capped():
 
 def test_merge_intervals():
     assert merge_intervals([(5, 9), (1, 3), (4, 4), (12, 13)]) == [(1, 9), (12, 13)]
+
+
+def test_cover_blocks_merges_nested_and_adjacent():
+    assert cover_blocks(["10.0.0.0/24", "10.0.1.0/24", "10.0.0.0/25", "2001:db8::/64"]) == [
+        N("10.0.0.0/23"),
+        N("2001:db8::/64"),
+    ]
+
+
+def test_cover_blocks_spans_per_version_above_limit():
+    v4 = [f"10.{i}.0.0/24" for i in range(0, 2 * (MAX_COVER_CLAUSES + 1), 2)]
+    v6 = ["2001:db8::/48", "2001:db8:2::/48"]
+    assert cover_blocks(v4 + v6) == [N("10.0.0.0/8"), N("2001:db8::/46")]
+
+
+def test_cover_blocks_single_block_family_above_limit():
+    # Regression: spanning_cidr() raised ValueError for a family that merged into a single block.
+    v4 = [f"10.{i}.0.0/24" for i in range(0, 2 * (MAX_COVER_CLAUSES + 1), 2)]
+    assert cover_blocks(v4 + ["2001:db8::/32", "2001:db8::/64"]) == [N("10.0.0.0/8"), N("2001:db8::/32")]
