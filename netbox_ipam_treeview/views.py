@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin
-from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -68,10 +69,12 @@ def filter_querystring(params):
 
 class TreeAccessMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
+        # handle_no_permission() redirects anonymous users to login and raises PermissionDenied for authenticated
+        # ones, so NetBox renders its own 403 page (fragment requests just see a non-2xx status in tree.js).
         if not request.user.is_authenticated and settings.LOGIN_REQUIRED:
             return self.handle_no_permission()
         if not request.user.has_perm("ipam.view_prefix"):
-            return HttpResponseForbidden() if request.user.is_authenticated else self.handle_no_permission()
+            return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
     def builder(self, request):
@@ -140,7 +143,7 @@ class ExpandView(TreeAccessMixin, View):
 class ColumnsView(TreeAccessMixin, View):
     def post(self, request):
         if not request.user.is_authenticated:
-            return HttpResponseForbidden()  # anonymous users (LOGIN_REQUIRED=False) have no stored preferences
+            raise PermissionDenied  # anonymous users (LOGIN_REQUIRED=False) have no stored preferences
         columns = [c for c in request.POST.getlist("columns") if c in COLUMNS]
         request.user.config.set(USER_CONFIG_PATH, columns or None, commit=True)
         next_url = request.POST.get("next", "")

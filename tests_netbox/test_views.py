@@ -83,7 +83,15 @@ class PermissionViewTest(TestCase):
         user = get_user_model().objects.create_user("nobody")
         self.client.force_login(user)
         r = self.client.get(reverse(NS + "tree"))
-        self.assertEqual(r.status_code, 403)
+        # NetBox's own permission-denied page, not an empty 403 body (#2).
+        self.assertContains(r, "You do not have permission", status_code=403)
+
+    def test_fragments_require_view_prefix(self):
+        user = get_user_model().objects.create_user("nobody")
+        self.client.force_login(user)
+        for name in ("children", "subtree", "expand"):
+            r = self.client.get(reverse(NS + name), {"key": "__root__"})
+            self.assertEqual(r.status_code, 403, name)
 
     @override_settings(LOGIN_REQUIRED=True)
     def test_anonymous_redirected(self):

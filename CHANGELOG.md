@@ -9,6 +9,7 @@ versioning: [SemVer](https://semver.org/).
 
 - The tree failed to expand (HTTP 500) when a VRF had more than 64 disjoint blocks and one IP family merged into a
   single block, e.g. a large IPv4 table next to one IPv6 supernet (#1).
+- Users without `ipam.view_prefix` now get NetBox's permission-denied page instead of an empty 403 response (#2).
 
 ## [0.1.0] - 2026-10-08
 
