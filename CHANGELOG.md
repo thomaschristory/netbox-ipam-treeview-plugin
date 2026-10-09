@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- The tree failed to expand (HTTP 500) when a VRF had more than 64 disjoint blocks and one IP family merged into a
+  single block, e.g. a large IPv4 table next to one IPv6 supernet (#1).
+
 ## [0.1.0] - 2026-10-08
 
 ### Added
