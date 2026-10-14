@@ -3,7 +3,7 @@ from netbox_ipam_treeview.conf import DEFAULTS
 
 
 def test_version():
-    assert __version__ == "0.1.0"
+    assert __version__ == "0.1.1"
 
 
 def test_defaults_cover_spec_keys():
