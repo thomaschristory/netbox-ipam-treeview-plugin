@@ -106,6 +106,16 @@ make lint         # ruff
 make dist         # build and check the wheel and sdist
 ```
 
+## Documentation
+
+- [Full documentation](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/)
+- [Installation](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/installation/)
+- [Configuration reference](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/configuration/)
+- [Using the tree](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/usage/)
+- [Permissions](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/permissions/)
+- [How it works](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/how-it-works/)
+- [Changelog](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/changelog/)
+
 ## License
 
 Apache-2.0

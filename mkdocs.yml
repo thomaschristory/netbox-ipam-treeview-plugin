@@ -1,0 +1,50 @@
+site_name: netbox-ipam-treeview-plugin
+site_description: DDI-style collapsible tree view for NetBox IPAM prefixes.
+site_url: https://thomaschristory.github.io/netbox-ipam-treeview-plugin/
+repo_url: https://github.com/thomaschristory/netbox-ipam-treeview-plugin
+repo_name: netbox-ipam-treeview-plugin
+edit_uri: ""
+# Built with Zensical (make docs), which reads this file. Zensical publishes everything under
+# docs_dir, so make docs builds from a staging copy of the files git can see.
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Using the tree: usage.md
+  - Permissions: permissions.md
+  - How it works: how-it-works.md
+  - Development: development.md
+  - Changelog: changelog.md
