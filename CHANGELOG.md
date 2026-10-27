@@ -7,6 +7,9 @@ versioning: [SemVer](https://semver.org/).
 
 ### Changed
 
+- NetBox 4.7.2 is now the minimum version (`min_version`). 4.7.0 and 4.7.1 recorded plaintext API tokens created
+  through background bulk requests in job results, and were never tested in CI. The dev stack is pinned to 4.7.2 (#12).
+
 - `config` is now defined unconditionally in `__init__.py`, per NetBox's plugin layout. If importing NetBox fails, the
   original error is raised instead of a missing-`config` error (#11).
 

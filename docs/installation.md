@@ -2,10 +2,23 @@
 
 ## Requirements
 
-- NetBox 4.7.x.
+- NetBox 4.7.2 or later 4.7.x release.
 - Python 3.12 to 3.14 (whatever NetBox itself uses).
 
 The package has no runtime dependency of its own beyond NetBox.
+
+### Compatibility
+
+NetBox refuses to load the plugin outside the `min_version` / `max_version` range of the release.
+
+| Plugin release | Min NetBox | Max NetBox | Tested in CI |
+|---|---|---|---|
+| next release | 4.7.2 | 4.7.99 | 4.7.2 |
+| 0.1.1 | 4.7.0 | 4.7.99 | 4.7.2 |
+| 0.1.0 | 4.7.0 | 4.7.99 | 4.7.2 |
+
+4.7.2 is the minimum because NetBox 4.7.0 and 4.7.1 recorded plaintext API tokens created through background bulk
+requests in job results. Upgrade NetBox first if you run one of them.
 
 ## Bare metal
 
