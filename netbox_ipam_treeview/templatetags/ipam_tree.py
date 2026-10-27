@@ -9,6 +9,9 @@ from django import template
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from utilities.templatetags.builtins.tags import static_with_params
+
+from netbox_ipam_treeview.version import __version__
 
 register = template.Library()
 
@@ -26,6 +29,12 @@ def obj_url(obj, action=""):
     meta = obj._meta
     viewname = f"{meta.app_label}:{meta.model_name}" + (f"_{action}" if action else "")
     return _pattern(viewname).format(pk=obj.pk)
+
+
+@register.simple_tag
+def tree_static(path):
+    """Static URL carrying the plugin version, so browsers fetch fresh assets after an upgrade."""
+    return static_with_params(path, v=__version__)
 
 
 @register.filter

@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from netbox_ipam_treeview.columns import USER_CONFIG_PATH
 from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
+from netbox_ipam_treeview.version import __version__
 
 from .fixtures import make_tree, superuser
 
@@ -19,6 +20,11 @@ class ViewTest(TestCase):
         r = self.client.get(reverse(NS + "tree"))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "No prefixes")
+
+    def test_static_assets_carry_plugin_version(self):
+        r = self.client.get(reverse(NS + "tree"))
+        self.assertContains(r, f"netbox_ipam_treeview/tree.js?v={__version__}")
+        self.assertContains(r, f"netbox_ipam_treeview/tree.css?v={__version__}")
 
     def test_tree_page_roots(self):
         make_tree()
