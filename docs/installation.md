@@ -74,7 +74,8 @@ Put `PLUGINS` (and `PLUGINS_CONFIG`, if any) in a file such as `/etc/netbox/conf
 
 After the restart:
 
-- *IPAM → Prefixes* has a *Prefix Tree* entry right below *Prefixes*.
+- The navigation has an *IPAM Tree* menu with a *Prefix Tree* entry (or, with `menu_location = "ipam"`, the entry is
+  right below *IPAM → Prefixes*).
 - `/plugins/ipam-tree/` shows the tree.
 - Prefix, Aggregate and VRF pages have a *Tree* tab.
 

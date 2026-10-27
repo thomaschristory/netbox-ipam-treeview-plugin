@@ -4,7 +4,7 @@
 
 | Entry point | What it shows |
 |---|---|
-| *IPAM → Prefixes → Prefix Tree* (`/plugins/ipam-tree/`) | The whole IPAM, one node per VRF (Global first). |
+| *IPAM Tree → Prefix Tree* (`/plugins/ipam-tree/`) | The whole IPAM, one node per VRF (Global first). |
 | *Tree view* button on the native prefix list | The same page, carrying the list's filters. Paging and sorting parameters are dropped. |
 | *Tree* tab on a prefix | That prefix and the subtree below it. |
 | *Tree* tab on an aggregate | That aggregate and the prefixes it covers. |

@@ -58,7 +58,8 @@ python /opt/netbox/netbox/manage.py collectstatic --no-input
 sudo systemctl restart netbox
 ```
 
-The tree lives at `/plugins/ipam-tree/` (menu: *IPAM → Prefixes → Prefix Tree*, right below *Prefixes*).
+The tree lives at `/plugins/ipam-tree/` (menu: *IPAM Tree → Prefix Tree*; set `menu_location = "ipam"` to have it
+right below *IPAM → Prefixes* instead).
 
 ## Configuration
 
@@ -75,7 +76,7 @@ PLUGINS_CONFIG = {
 | Setting | Default | Meaning |
 |---|---|---|
 | `show_menu_item` | `True` | Show the *Prefix Tree* menu entry |
-| `menu_location` | `"ipam"` | `"ipam"`: IPAM menu, right below *Prefixes*; `"plugins"`: the Plugins menu |
+| `menu_location` | `"menu"` | `"menu"`: the plugin's own *IPAM Tree* menu; `"plugins"`: the shared Plugins menu; `"ipam"`: IPAM menu, right below *Prefixes* |
 | `show_list_toggle` | `True` | *Tree view* button on the native prefix list |
 | `show_prefix_tab` | `True` | *Tree* tab on prefix pages |
 | `show_aggregate_tab` | `True` | *Tree* tab on aggregate pages |

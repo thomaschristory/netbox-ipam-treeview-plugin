@@ -7,6 +7,10 @@ versioning: [SemVer](https://semver.org/).
 
 ### Changed
 
+- **Behaviour change:** the *Prefix Tree* entry now lives in the plugin's own *IPAM Tree* menu by default
+  (`menu_location = "menu"`), registered through NetBox's plugin API. Placing it right below *IPAM → Prefixes* patches
+  a NetBox core menu without a supported API, so it is now opt-in: set `menu_location = "ipam"` to keep the previous
+  placement. `"plugins"` (the shared Plugins menu) is unchanged (#8).
 - The tree views use NetBox's `ContentTypePermissionRequiredMixin` for `LOGIN_REQUIRED` and `ipam.view_prefix`
   checks instead of a hand-written copy, so they follow NetBox's auth handling (#9).
 - NetBox 4.7.2 is now the minimum version (`min_version`). 4.7.0 and 4.7.1 recorded plaintext API tokens created
