@@ -1,5 +1,3 @@
-from django.conf import settings
-from django.contrib.auth.mixins import AccessMixin
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
@@ -11,7 +9,7 @@ from ipam.filtersets import PrefixFilterSet
 from ipam.forms import PrefixFilterForm
 from ipam.models import VRF, Aggregate, Prefix
 from netbox.views import generic
-from utilities.views import ViewTab, register_model_view
+from utilities.views import ContentTypePermissionRequiredMixin, ViewTab, register_model_view
 
 from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
 from .conf import get_setting
@@ -67,16 +65,12 @@ def filter_querystring(params):
     return params.urlencode()
 
 
-class TreeAccessMixin(AccessMixin):
-    def dispatch(self, request, *args, **kwargs):
-        # handle_no_permission() redirects anonymous users to login and raises PermissionDenied for authenticated
-        # ones, so NetBox renders its own 403 page. tree.js treats a 403 fragment as a failed load and reloads the
-        # page when a fragment request was redirected to login.
-        if not request.user.is_authenticated and settings.LOGIN_REQUIRED:
-            return self.handle_no_permission()
-        if not request.user.has_perm("ipam.view_prefix"):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+class TreeAccessMixin(ContentTypePermissionRequiredMixin):
+    # NetBox's mixin enforces LOGIN_REQUIRED and the model permission. handle_no_permission() redirects anonymous
+    # users to login and raises PermissionDenied for authenticated ones, so NetBox renders its own 403 page. tree.js
+    # treats a 403 fragment as a failed load and reloads the page when a fragment request was redirected to login.
+    def get_required_permission(self):
+        return "ipam.view_prefix"
 
     def builder(self, request):
         return TreeBuilder(request.user, show_free_space=_free(request))
