@@ -82,7 +82,9 @@ class TreeAccessMixin(ContentTypePermissionRequiredMixin):
         return response
 
     def not_found(self, request):
-        return render(request, "netbox_ipam_treeview/inc/rows.html", {"error": True}, status=404)
+        # tree.js shows this row under the node that failed to load (e.g. a prefix deleted since the page loaded).
+        context = {"error": True, "parent_key": request.GET.get("key", ""), "level": _level(request) + 1}
+        return render(request, "netbox_ipam_treeview/inc/rows.html", context, status=404)
 
 
 class TreeView(TreeAccessMixin, View):

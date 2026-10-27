@@ -68,6 +68,15 @@ class ViewTest(TestCase):
         self.assertEqual(r.status_code, 404)
         self.assertContains(r, "ipt-error", status_code=404)
 
+    def test_error_row_sits_under_the_failed_node(self):
+        # tree.js inserts the 404 error row under the node: it needs the child level and the parent key.
+        for name in ("children", "subtree"):
+            with self.subTest(name):
+                r = self.client.get(reverse(NS + name), {"key": "pfx:999999", "level": "3"})
+                self.assertContains(r, 'data-level="4"', status_code=404)
+                self.assertContains(r, 'data-parent="pfx:999999"', status_code=404)
+                self.assertContains(r, "--ipt-level: 4", status_code=404)
+
     def test_children_bad_key_404(self):
         r = self.client.get(reverse(NS + "children"), {"key": "nope", "level": "x"})
         self.assertEqual(r.status_code, 404)
