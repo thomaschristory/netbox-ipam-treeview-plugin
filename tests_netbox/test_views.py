@@ -30,6 +30,15 @@ class ViewTest(TestCase):
         self.assertContains(r, 'data-key="vrf:0"')
         self.assertContains(r, "RED")
         self.assertNotContains(r, "10.1.1.0/26")
+        self.assertContains(r, reverse(NS + "columns"))  # column picker for authenticated users
+
+    def test_superuser_sees_tree_and_row_actions(self):
+        t = make_tree()
+        self.user.is_superuser = True
+        self.user.save()
+        r = self.client.get(reverse(NS + "children"), {"key": pfx_key(t["p24"].pk), "level": "0"})
+        self.assertContains(r, "10.1.1.0/26")
+        self.assertContains(r, reverse("ipam:prefix_edit", kwargs={"pk": t["p26"].pk}))
 
     def test_children_fragment(self):
         t = make_tree()
