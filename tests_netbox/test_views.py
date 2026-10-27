@@ -111,6 +111,23 @@ class PermissionViewTest(TestCase):
         r = self.client.get(reverse(NS + "tree"))
         self.assertEqual(r.status_code, 302)
 
+    @override_settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
+    def test_anonymous_allowed_by_exempt_view_permissions(self):
+        make_tree()
+        self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 200)
+        self.assertContains(self.client.get(reverse(NS + "subtree"), {"key": "__root__"}), "10.1.1.0/26")
+
+    @override_settings(LOGIN_REQUIRED=True, EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
+    def test_exempt_view_permissions_do_not_bypass_login_required(self):
+        self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 302)
+
+    @override_settings(EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
+    def test_authenticated_user_allowed_by_exempt_view_permissions(self):
+        make_tree()
+        self.client.force_login(get_user_model().objects.create_user("nobody"))
+        self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 200)
+        self.assertContains(self.client.get(reverse(NS + "subtree"), {"key": "__root__"}), "10.1.1.0/26")
+
 
 class QueryScalingTest(TestCase):
     def setUp(self):
