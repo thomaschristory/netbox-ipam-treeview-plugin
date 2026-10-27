@@ -1,4 +1,4 @@
-ARG NETBOX_IMAGE=docker.io/netboxcommunity/netbox:v4.7-5.1.1
+ARG NETBOX_IMAGE=docker.io/netboxcommunity/netbox:v4.7.2-5.1.1
 FROM ${NETBOX_IMAGE}
 
 USER root

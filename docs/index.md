@@ -34,6 +34,9 @@ Run `collectstatic` and restart NetBox. The tree lives at `/plugins/ipam-tree/`,
 
 | Plugin | NetBox | Python |
 |---|---|---|
+| next release | 4.7.2 to 4.7.x | 3.12, 3.13, 3.14 |
 | 0.1.x | 4.7.0 to 4.7.x | 3.12, 3.13, 3.14 |
+
+Every release is listed in [Installation → Compatibility](installation.md#compatibility).
 
 ![The prefix tree, dark theme](img/tree-dark.png)
