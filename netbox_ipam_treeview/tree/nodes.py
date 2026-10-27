@@ -6,6 +6,7 @@ from typing import Any
 
 ALL_VRFS = "*"
 _KEY = re.compile(r"^(vrf|agg|pfx):(\d+)(?:@(\d+|\*))?$")
+_TAB = re.compile(r"^(prefix|aggregate|vrf):(\d+)$")
 
 
 def vrf_key(vrf_id):
@@ -36,6 +37,19 @@ def parse_key(key):
     if kind == "vrf":
         return "vrf", obj_id, obj_id or None
     return "prefix", obj_id, None
+
+
+def tab_key(model_name, pk):
+    """Addresses the object a detail tab's tree is built for, e.g. prefix:12."""
+    return f"{model_name}:{pk}"
+
+
+def parse_tab_key(value):
+    """Return (model_name, pk) for a tab key."""
+    m = _TAB.match(value or "")
+    if not m:
+        raise ValueError(f"invalid tab key {value!r}")
+    return m.group(1), int(m.group(2))
 
 
 @dataclass

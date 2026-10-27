@@ -10,6 +10,11 @@ versioning: [SemVer](https://semver.org/).
 - Expanding a node that no longer exists (for example a prefix deleted since the page loaded, or a stale key from
   remembered state) now shows the server's *Not found or no permission* row under it instead of only a red chevron.
   403 responses and login redirects are handled as before (#23).
+- The *Tree* tabs on prefixes, aggregates and VRFs now remember which nodes were open, per object, and reopen them
+  when you come back (within `expand_all_limit`), like the main page.
+- The free-space switch now applies to the rows rendered with the page: with free space switched off, a freshly opened
+  *Tree* tab no longer shows free-space rows. The choice is also kept in an `ipam_tree_free` cookie so the server can
+  render it (#24).
 
 ## [0.2.0] - 2026-10-27
 

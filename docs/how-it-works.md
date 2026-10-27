@@ -10,9 +10,11 @@ The tree page renders the top levels only. Opening a row fetches its children as
 |---|---|
 | `children/?key=...` | The direct children of one node. |
 | `subtree/?key=...` | A node's whole subtree (Alt+click, `*`, *Expand all*). |
-| `expand/?keys=...` | The rows needed to reopen a set of nodes. |
+| `expand/?keys=...` | The rows needed to reopen a set of nodes. With `tab=prefix:<id>`, `aggregate:<id>` or `vrf:<id>`, rooted at that object, as on its *Tree* tab. |
 
 Node keys are `vrf:<id>` (with `vrf:0` for Global), `agg:<id>@<vrf>` for an aggregate under a VRF group, and `pfx:<id>`.
+
+Every endpoint takes `free=1` or `free=0` for free-space rows. Without it, the `ipam_tree_free` cookie written by the toolbar switch applies, then `show_free_space`.
 
 ## Nesting
 
