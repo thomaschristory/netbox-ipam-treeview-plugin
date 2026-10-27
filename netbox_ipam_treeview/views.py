@@ -38,7 +38,11 @@ def table_context(request, builder, nodes, **extra):
     if "utilization" in columns:
         values = bulk_utilization([n.obj for n in nodes if n.kind == "prefix"])
         # Under a VRF group an aggregate counts that VRF's prefixes only; ungrouped (ALL_VRFS) it is NetBox's number.
-        agg_values = bulk_aggregate_utilization([(n.obj, n.vrf_id) for n in nodes if n.kind == "aggregate"])
+        # Constrained users count only the prefixes they can see, so a VRF's hidden occupancy is not revealed.
+        agg_values = bulk_aggregate_utilization(
+            [(n.obj, n.vrf_id) for n in nodes if n.kind == "aggregate"],
+            prefixes=builder.prefixes if builder.restricted else None,
+        )
         for n in nodes:
             if n.kind == "prefix":
                 n.utilization = values.get(n.obj.pk)

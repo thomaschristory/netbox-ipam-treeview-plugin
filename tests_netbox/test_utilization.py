@@ -69,6 +69,13 @@ class AggregateUtilizationTest(TestCase):
             with self.subTest(aggregate=str(agg.prefix)):
                 self.assertAlmostEqual(result[(agg.pk, ALL_VRFS)], agg.get_utilization(), places=6)
 
+    def test_limited_to_given_prefixes(self):
+        visible = Prefix.objects.filter(prefix="10.1.0.0/24")
+        result = bulk_aggregate_utilization([(self.agg, None), (self.agg, self.red.pk), (self.agg, ALL_VRFS)], visible)
+        self.assertAlmostEqual(result[(self.agg.pk, None)], 100 / 65536)
+        self.assertEqual(result[(self.agg.pk, self.red.pk)], 0)
+        self.assertAlmostEqual(result[(self.agg.pk, ALL_VRFS)], 100 / 65536)
+
     def test_empty(self):
         with self.assertNumQueries(0):
             self.assertEqual(bulk_aggregate_utilization([]), {})

@@ -78,11 +78,12 @@ def bulk_utilization(prefixes):
     return result
 
 
-def bulk_aggregate_utilization(pairs):
+def bulk_aggregate_utilization(pairs, prefixes=None):
     """Return {(aggregate pk, vrf_id): utilization percent} for (aggregate, vrf_id) pairs, in one query.
 
     `vrf_id` ALL_VRFS gives Aggregate.get_utilization() (prefixes of every VRF); None or a VRF pk counts only the
-    prefixes of the global table or of that VRF, as shown under a VRF group of the tree.
+    prefixes of the global table or of that VRF, as shown under a VRF group of the tree. `prefixes` limits the
+    count to a queryset, such as the prefixes a constrained user may see.
     """
     pairs = list(pairs)
     if not pairs:
@@ -90,7 +91,8 @@ def bulk_aggregate_utilization(pairs):
     blocks = cover_blocks(a.prefix for a, _ in pairs)
     lookup = reduce(or_, (Q(prefix__net_contained_or_equal=str(b)) for b in blocks))
     by_vrf = defaultdict(list)
-    for prefix, vrf_id in Prefix.objects.filter(lookup).values_list("prefix", "vrf_id"):
+    qs = Prefix.objects.all() if prefixes is None else prefixes
+    for prefix, vrf_id in qs.filter(lookup).order_by().values_list("prefix", "vrf_id"):
         by_vrf[vrf_id].append(prefix)
         by_vrf[ALL_VRFS].append(prefix)
     indexes = {}

@@ -240,6 +240,32 @@ class AggregateUtilizationViewTest(TestCase):
         self.assertNotContains(r, self.red_bar)
 
 
+class ConstrainedAggregateUtilizationViewTest(TestCase):
+    """A constrained user's aggregate bar counts only the prefixes that user can see (#26 review)."""
+
+    user_permissions = ("ipam.view_aggregate", "ipam.view_vrf")
+
+    def setUp(self):
+        super().setUp()
+        from django.contrib.contenttypes.models import ContentType
+        from ipam.models import Prefix
+        from users.models import ObjectPermission
+
+        self.t = make_tree()
+        Prefix.objects.create(prefix="10.2.0.0/15", vrf=self.t["red"])  # hidden from the user
+        perm = ObjectPermission.objects.create(
+            name="view one prefix", actions=["view"], constraints={"prefix__net_contained_or_equal": "10.1.9.0/24"}
+        )
+        perm.object_types.add(ContentType.objects.get_for_model(Prefix))
+        perm.users.add(self.user)
+
+    def test_hidden_vrf_prefixes_not_counted(self):
+        r = self.client.get(reverse(NS + "children"), {"key": vrf_key(self.t["red"].pk), "level": "0"})
+        self.assertContains(r, f'data-key="agg:{self.t["agg"].pk}@{self.t["red"].pk}"')
+        self.assertContains(r, f'aria-valuenow="{100 / 65536}"')  # only 10.1.9.0/24 of 10/8
+        self.assertNotContains(r, 'aria-valuenow="1.171875"')  # RED's 10.1/16 + 10.2/15, both hidden
+
+
 class ReviewViewFixesTest(TestCase):
     user_permissions = VIEW_PERMISSIONS
 
