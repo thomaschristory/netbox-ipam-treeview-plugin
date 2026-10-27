@@ -110,6 +110,8 @@ class TabStateTest(TestCase):
 
     def test_expand_tab_with_nothing_open(self):
         r = self.client.get(reverse(EXPAND), {"tab": tab_key("prefix", self.t["p16"].pk), "keys": ""})
+        self.assertContains(r, f'data-key="{pfx_key(self.t["p16"].pk)}"')
+        self.assertNotContains(r, 'data-key="vrf:')  # rooted at the tab's prefix even with nothing open
         self.assertContains(r, 'aria-expanded="false"')
         self.assertNotContains(r, "10.1.1.0/24")
 
