@@ -5,7 +5,7 @@
 | Path | Content |
 |---|---|
 | `netbox_ipam_treeview/` | The plugin package. |
-| `netbox_ipam_treeview/tree/` | Tree logic: free blocks, nesting, node keys, utilization math. Pure Python, testable without NetBox. |
+| `netbox_ipam_treeview/tree/` | Tree logic: free blocks, nesting, node keys, utilization math. Pure Python; the unit tests stub `netbox.plugins` (`tests/conftest.py`) so it runs without NetBox. |
 | `tests/` | Unit tests (pytest), no NetBox needed. |
 | `tests_netbox/` | Integration tests that run inside NetBox with `manage.py test`. |
 | `dev/` | netbox-docker dev stack, the seed script and the distribution check. |
