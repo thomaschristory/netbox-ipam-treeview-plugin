@@ -1,20 +1,18 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
+from utilities.testing import TestCase
 
 from netbox_ipam_treeview.columns import USER_CONFIG_PATH
 from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
 from netbox_ipam_treeview.version import __version__
 
-from .fixtures import make_tree, superuser
+from .fixtures import VIEW_PERMISSIONS, make_tree
 
 NS = "plugins:netbox_ipam_treeview:"
 
 
 class ViewTest(TestCase):
-    def setUp(self):
-        self.user = superuser()
-        self.client.force_login(self.user)
+    user_permissions = VIEW_PERMISSIONS
 
     def test_tree_page_empty(self):
         r = self.client.get(reverse(NS + "tree"))
@@ -32,6 +30,15 @@ class ViewTest(TestCase):
         self.assertContains(r, 'data-key="vrf:0"')
         self.assertContains(r, "RED")
         self.assertNotContains(r, "10.1.1.0/26")
+        self.assertContains(r, reverse(NS + "columns"))  # column picker for authenticated users
+
+    def test_superuser_sees_tree_and_row_actions(self):
+        t = make_tree()
+        self.user.is_superuser = True
+        self.user.save()
+        r = self.client.get(reverse(NS + "children"), {"key": pfx_key(t["p24"].pk), "level": "0"})
+        self.assertContains(r, "10.1.1.0/26")
+        self.assertContains(r, reverse("ipam:prefix_edit", kwargs={"pk": t["p26"].pk}))
 
     def test_children_fragment(self):
         t = make_tree()
@@ -40,6 +47,20 @@ class ViewTest(TestCase):
         self.assertContains(r, "10.1.1.0/26")
         self.assertContains(r, 'aria-level="5"')  # aria-level = level + 1, children sit at level 4
         self.assertContains(r, "10.1.1.128/25")  # free-space row
+
+    def test_row_actions_follow_prefix_permissions(self):
+        t = make_tree()
+        params = {"key": pfx_key(t["p24"].pk), "level": "0"}
+        edit_url = reverse("ipam:prefix_edit", kwargs={"pk": t["p26"].pk})
+        delete_url = reverse("ipam:prefix_delete", kwargs={"pk": t["p26"].pk})
+        add_url = reverse("ipam:prefix_add")
+        r = self.client.get(reverse(NS + "children"), params)
+        for url in (edit_url, delete_url, add_url):
+            self.assertNotContains(r, url)
+        self.add_permissions("ipam.add_prefix", "ipam.change_prefix", "ipam.delete_prefix")
+        r = self.client.get(reverse(NS + "children"), params)
+        for url in (edit_url, delete_url, add_url):
+            self.assertContains(r, url)
 
     def test_children_unknown_key_404(self):
         r = self.client.get(reverse(NS + "children"), {"key": "pfx:999999", "level": "0"})
@@ -85,16 +106,13 @@ class ViewTest(TestCase):
 
 
 class PermissionViewTest(TestCase):
+    # self.user has no permissions; anonymous cases log out first.
     def test_requires_view_prefix(self):
-        user = get_user_model().objects.create_user("nobody")
-        self.client.force_login(user)
         r = self.client.get(reverse(NS + "tree"))
         # NetBox's own permission-denied page, not an empty 403 body (#2).
         self.assertContains(r, "You do not have permission", status_code=403)
 
     def test_fragments_require_view_prefix(self):
-        user = get_user_model().objects.create_user("nobody")
-        self.client.force_login(user)
         for name in ("children", "subtree", "expand"):
             r = self.client.get(reverse(NS + name), {"key": "__root__"})
             self.assertContains(r, "You do not have permission", status_code=403, msg_prefix=name)
@@ -102,36 +120,38 @@ class PermissionViewTest(TestCase):
         self.assertContains(r, "You do not have permission", status_code=403)
 
     def test_anonymous_without_permission_redirected(self):
+        self.client.logout()
         with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=[]):
             r = self.client.get(reverse(NS + "tree"))
         self.assertEqual(r.status_code, 302)
 
     @override_settings(LOGIN_REQUIRED=True)
     def test_anonymous_redirected(self):
+        self.client.logout()
         r = self.client.get(reverse(NS + "tree"))
         self.assertEqual(r.status_code, 302)
 
     @override_settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
     def test_anonymous_allowed_by_exempt_view_permissions(self):
+        self.client.logout()
         make_tree()
         self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 200)
         self.assertContains(self.client.get(reverse(NS + "subtree"), {"key": "__root__"}), "10.1.1.0/26")
 
     @override_settings(LOGIN_REQUIRED=True, EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
     def test_exempt_view_permissions_do_not_bypass_login_required(self):
+        self.client.logout()
         self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 302)
 
     @override_settings(EXEMPT_VIEW_PERMISSIONS=["ipam.prefix"])
     def test_authenticated_user_allowed_by_exempt_view_permissions(self):
         make_tree()
-        self.client.force_login(get_user_model().objects.create_user("nobody"))
         self.assertEqual(self.client.get(reverse(NS + "tree")).status_code, 200)
         self.assertContains(self.client.get(reverse(NS + "subtree"), {"key": "__root__"}), "10.1.1.0/26")
 
 
 class QueryScalingTest(TestCase):
-    def setUp(self):
-        self.client.force_login(superuser())
+    user_permissions = VIEW_PERMISSIONS
 
     def _children_queries(self, n):
         from django.db import connection
@@ -151,8 +171,10 @@ class QueryScalingTest(TestCase):
 
 
 class ReviewViewFixesTest(TestCase):
+    user_permissions = VIEW_PERMISSIONS
+
     def setUp(self):
-        self.client.force_login(superuser())
+        super().setUp()
         make_tree()
 
     def test_list_paging_params_do_not_trigger_filtered_mode(self):
@@ -167,6 +189,10 @@ class ReviewViewFixesTest(TestCase):
 
 
 class AnonymousColumnsTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.logout()
+
     def test_anonymous_columns_post_is_rejected(self):
         with self.settings(LOGIN_REQUIRED=False, EXEMPT_VIEW_PERMISSIONS=["*"]):
             r = self.client.post(reverse(NS + "columns"), {"columns": ["status"]})
