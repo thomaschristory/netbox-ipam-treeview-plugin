@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from netbox_ipam_treeview.version import __version__
+
 from .fixtures import make_tree, superuser
 
 TREE = "plugins:netbox_ipam_treeview:tree"
@@ -16,6 +18,8 @@ class TabTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "10.1.1.0/24")
         self.assertContains(r, f'data-root-key="pfx:{self.t["p16"].pk}"')
+        self.assertContains(r, f"netbox_ipam_treeview/tree.js?v={__version__}")
+        self.assertContains(r, f"netbox_ipam_treeview/tree.css?v={__version__}")
 
     def test_aggregate_tab_lists_each_vrf(self):
         agg = self.t["agg"].pk

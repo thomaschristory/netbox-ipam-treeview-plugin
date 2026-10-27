@@ -1,10 +1,10 @@
 {% extends 'generic/_base.html' %}
-{% load static i18n helpers %}
+{% load i18n helpers ipam_tree %}
 
 {% block title %}{% trans "Prefix Tree" %}{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{% static 'netbox_ipam_treeview/tree.css' %}">
+  <link rel="stylesheet" href="{% tree_static 'netbox_ipam_treeview/tree.css' %}">
 {% endblock %}
 
 {% block controls %}
@@ -53,5 +53,5 @@
 {% endblock content %}
 
 {% block javascript %}
-  <script src="{% static 'netbox_ipam_treeview/tree.js' %}"></script>
+  <script src="{% tree_static 'netbox_ipam_treeview/tree.js' %}"></script>
 {% endblock %}

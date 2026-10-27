@@ -1,9 +1,9 @@
 {% extends base_template %}
-{% load static %}
+{% load ipam_tree %}
 
 {% block head %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'netbox_ipam_treeview/tree.css' %}">
+  <link rel="stylesheet" href="{% tree_static 'netbox_ipam_treeview/tree.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -13,5 +13,5 @@
 
 {% block javascript %}
   {{ block.super }}
-  <script src="{% static 'netbox_ipam_treeview/tree.js' %}"></script>
+  <script src="{% tree_static 'netbox_ipam_treeview/tree.js' %}"></script>
 {% endblock %}

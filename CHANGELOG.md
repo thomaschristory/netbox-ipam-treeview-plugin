@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `tree.js` and `tree.css` URLs now carry the plugin version (`?v=`), so browsers stop running a cached script
+  against new server fragments after an upgrade (#10).
+
 ## [0.1.1] - 2026-10-09
 
 ### Fixed
