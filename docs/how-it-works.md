@@ -32,4 +32,4 @@ Utilization is computed in bulk, with a constant number of queries per VRF, inst
 
 ## Browser side
 
-`tree.js` is plain JavaScript with no build step: it uses `fetch()` for fragments and the browser's local storage for the open nodes (at most 200 keys, or a single flag after *Expand all*). If a fragment request is redirected to the login page because the session expired, the page reloads to the login form. If a node can no longer be loaded (for example its prefix was deleted since the page loaded), the server's error row is shown under it and its chevron turns red; reopening the node retries.
+`tree.js` is plain JavaScript with no build step: it uses `fetch()` for fragments and the browser's local storage for the open nodes (at most 200 keys, or a single flag after *Expand all*). If a fragment request is redirected to the login page because the session expired, the page reloads to the login form. If a node can no longer be loaded (for example its prefix was deleted since the page loaded), the server's error row is shown under it and its chevron turns red; collapsing and reopening the node retries.

@@ -135,6 +135,8 @@
             descendants(row).forEach((r) => r.remove());
             row.after(...errors);
             delete row.dataset.loaded; // reopening retries instead of showing the error row
+            // Open (but not remembered) so the error row follows the row: collapsing hides it, ancestor toggles keep it.
+            if (row.hasAttribute("aria-expanded")) row.setAttribute("aria-expanded", "true");
           }
           throw new Error(`HTTP ${res.status} loading ${row.dataset.key}`);
         }
@@ -183,6 +185,11 @@
         rows().forEach((r) => {
           if (r.dataset.loaded) r.setAttribute("aria-expanded", "true");
           r.classList.remove("ipt-hidden");
+        });
+        // Error rows come back with the node they sit under, which stays open (and unloaded) like after load().
+        tbody.querySelectorAll("tr.ipt-error").forEach((r) => {
+          r.classList.remove("ipt-hidden");
+          tbody.querySelector(`tr[data-key="${CSS.escape(r.dataset.parent)}"]`)?.setAttribute("aria-expanded", "true");
         });
         return;
       }
