@@ -91,6 +91,10 @@ Utilization uses the same rules as NetBox's prefix pages: a container counts its
 
 The page remembers which nodes were open, in the browser's local storage, and reopens them when you come back. After *Expand all*, it remembers that instead and expands everything again (still within `expand_all_limit`).
 
+Each *Tree* tab remembers its own open nodes, per prefix, aggregate or VRF, the same way. Until you open or close a node there, a tab starts with its object and its children open (an aggregate that spans several VRFs starts with one collapsed row per VRF).
+
+The free-space switch is remembered in local storage and in an `ipam_tree_free` cookie, so pages and tabs are rendered with your choice from the start.
+
 ## Keyboard
 
 Click a row or tab into the table, then:

@@ -1,8 +1,8 @@
 from ipam.models import Prefix
 from utilities.testing import TestCase
 
-from netbox_ipam_treeview.tree.builder import TreeBuilder
-from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
+from netbox_ipam_treeview.tree.builder import NodeNotFound, TreeBuilder
+from netbox_ipam_treeview.tree.nodes import agg_key, pfx_key, tab_key, vrf_key
 
 from .fixtures import VIEW_PERMISSIONS, make_tree
 
@@ -61,6 +61,54 @@ class SubtreeTest(TestCase):
     def test_expand_ignores_unknown_keys(self):
         nodes = TreeBuilder(self.user).expand({"pfx:999999", "garbage"})
         self.assertEqual([n.kind for n in nodes], ["vrf", "vrf"])
+
+    def test_tab_roots(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        self.assertEqual([n.key for n in b.tab_roots(tab_key("prefix", self.t["p16"].pk))], [pfx_key(self.t["p16"].pk)])
+        self.assertEqual([n.key for n in b.tab_roots(tab_key("vrf", self.t["red"].pk))], [vrf_key(self.t["red"].pk)])
+        agg, red = self.t["agg"].pk, self.t["red"].pk
+        roots = b.tab_roots(tab_key("aggregate", agg))
+        self.assertEqual([n.key for n in roots], [agg_key(agg, None), agg_key(agg, red)])
+
+    def test_tab_roots_unknown(self):
+        b = TreeBuilder(self.user)
+        for bad in ("prefix:999999", "vrf:999999", "aggregate:999999", "device:1", "garbage", ""):
+            with self.assertRaises(NodeNotFound, msg=bad):
+                b.tab_roots(bad)
+
+    def test_expand_from_tab_roots(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        p16, p24 = pfx_key(self.t["p16"].pk), pfx_key(self.t["p24"].pk)
+        nodes = b.expand({p16}, b.tab_roots(tab_key("prefix", self.t["p16"].pk)))
+        self.assertEqual([(n.key, n.level, n.expanded) for n in nodes], [(p16, 0, True), (p24, 1, False)])
+        nodes = b.expand({p16, p24}, b.tab_roots(tab_key("prefix", self.t["p16"].pk)))
+        self.assertEqual([n.obj.pk for n in nodes], [self.t["p16"].pk, self.t["p24"].pk, self.t["p26"].pk])
+
+    def test_expand_from_tab_roots_respects_limit(self):
+        b = TreeBuilder(self.user, show_free_space=False, limit=2)
+        roots = b.tab_roots(tab_key("prefix", self.t["p16"].pk))
+        nodes = b.expand({pfx_key(self.t["p16"].pk), pfx_key(self.t["p24"].pk)}, roots)
+        self.assertEqual(len(nodes), 2)
+        self.assertTrue(b.truncated)
+
+    def test_full_tree_from_tab_roots(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        nodes = b.full_tree(b.tab_roots(tab_key("prefix", self.t["p16"].pk)))
+        self.assertEqual(
+            [(n.obj.pk, n.level, n.expanded) for n in nodes],
+            [(self.t["p16"].pk, 0, True), (self.t["p24"].pk, 1, True), (self.t["p26"].pk, 2, False)],
+        )
+        self.assertFalse(b.truncated)
+
+    def test_full_tree_from_tab_roots_shares_limit(self):
+        b = TreeBuilder(self.user, show_free_space=False, limit=2)
+        agg, red = self.t["agg"].pk, self.t["red"].pk
+        nodes = b.full_tree(b.tab_roots(tab_key("aggregate", agg)))
+        # The global group uses the whole budget; the RED group is listed but left unexpanded.
+        self.assertTrue(b.truncated)
+        self.assertEqual(nodes[-1].key, agg_key(agg, red))
+        self.assertFalse(nodes[-1].expanded)
+        self.assertEqual(b.limit, 2)
 
     def test_filtered_shows_ancestors_as_context(self):
         nodes = TreeBuilder(self.user).filtered(Prefix.objects.filter(pk=self.t["p26"].pk))

@@ -10,7 +10,7 @@ from ipam.models import VRF, Aggregate, Prefix
 from ..conf import get_setting
 from .gaps import interleave
 from .nesting import ANY, Item, nest
-from .nodes import ALL_VRFS, Node, agg_key, parse_key, pfx_key, vrf_key
+from .nodes import ALL_VRFS, Node, agg_key, parse_key, parse_tab_key, pfx_key, vrf_key
 
 
 class NodeNotFound(Exception):
@@ -203,6 +203,12 @@ class TreeBuilder:
         except Aggregate.DoesNotExist:
             raise NodeNotFound(pk) from None
 
+    def _get_vrf(self, pk):
+        try:
+            return self.vrfs.get(pk=pk)
+        except VRF.DoesNotExist:
+            raise NodeNotFound(pk) from None
+
     def _check_vrf(self, vrf_id):
         if vrf_id is not None and vrf_id != ALL_VRFS and not self.vrfs.filter(pk=vrf_id).exists():
             raise NodeNotFound(vrf_id)
@@ -263,6 +269,21 @@ class TreeBuilder:
             node.label = names.get(v, _("Global"))
             nodes.append(node)
         return nodes
+
+    def object_roots(self, obj):
+        """Top rows of the Tree tab of a prefix, aggregate or VRF."""
+        if isinstance(obj, Aggregate):
+            return self.aggregate_roots(obj)
+        return [self.node_for(obj)]
+
+    def tab_roots(self, tab):
+        """object_roots() of the object a tab key (prefix:N, aggregate:N, vrf:N) names, if the user can view it."""
+        try:
+            model, pk = parse_tab_key(tab)
+        except ValueError:
+            raise NodeNotFound(tab) from None
+        get = {"prefix": self._get_prefix, "aggregate": self._get_aggregate, "vrf": self._get_vrf}[model]
+        return self.object_roots(get(pk))
 
     # --- bulk loading ----------------------------------------------------------------------------------------
 
@@ -350,10 +371,10 @@ class TreeBuilder:
             by_key[key].partial = True
             key = by_key[key].parent_key
 
-    def full_tree(self):
-        """Roots plus every root's subtree, sharing one row budget."""
+    def full_tree(self, roots=None):
+        """Roots (the page's unless given) plus every root's subtree, sharing one row budget."""
         out, budget, limit = [], self.limit, self.limit
-        for root in self.roots():
+        for root in self.roots() if roots is None else roots:
             out.append(root)
             if not root.has_children:
                 continue
@@ -368,8 +389,8 @@ class TreeBuilder:
         self.limit = limit
         return out
 
-    def expand(self, keys):
-        """Roots, with every node whose key is in `keys` expanded (restores a saved expansion state)."""
+    def expand(self, keys, roots=None):
+        """Roots (the page's unless given), with every node whose key is in `keys` expanded (restores a saved state)."""
         # Keep the client's order (ancestors are expanded before descendants) when capping.
         keys = set(list(dict.fromkeys(keys))[:500])
         out = []
@@ -388,7 +409,7 @@ class TreeBuilder:
                     node.expanded = True
                     visit(kids)
 
-        visit(self.roots())
+        visit(self.roots() if roots is None else roots)
         return out
 
     def filtered(self, match_qs):

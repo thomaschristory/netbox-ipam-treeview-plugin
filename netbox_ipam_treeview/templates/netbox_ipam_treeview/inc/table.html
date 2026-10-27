@@ -6,7 +6,7 @@
            data-subtree-url="{% url 'plugins:netbox_ipam_treeview:subtree' %}"
            data-expand-url="{% url 'plugins:netbox_ipam_treeview:expand' %}"
            data-storage-key="{{ storage_key }}" data-free="{{ free|yesno:'1,0' }}"
-           data-filtered="{{ filtered|yesno:'1,0' }}" data-root-key="{{ root_key }}"
+           data-filtered="{{ filtered|yesno:'1,0' }}" data-root-key="{{ root_key }}" data-tab="{{ tree_tab|default:'' }}"
            data-truncated-message="{% trans 'Row limit reached: showing a partial tree. Narrow the view with filters.' %}">
       <thead>
         <tr>

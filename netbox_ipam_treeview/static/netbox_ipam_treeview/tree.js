@@ -21,17 +21,27 @@
   };
 
   const FREE_KEY = "ipam-tree:free";
+  const FREE_COOKIE = "ipam_tree_free"; // conf.FREE_COOKIE: lets the server render the first rows to match
   const MAX_SAVED_KEYS = 200; // keeps the restore URL short; ancestors come first in DOM order
+
+  function rememberFree(on) {
+    store.set(FREE_KEY, on);
+    const secure = location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${FREE_COOKIE}=${on ? 1 : 0}; path=/; max-age=31536000; samesite=lax${secure}`;
+  }
 
   function init(table) {
     const tbody = table.tBodies[0];
     const ds = table.dataset;
     const filtered = ds.filtered === "1";
     const onPage = ds.rootKey === "__root__" && ds.storageKey === "ipam-tree:page";
+    // Detail tabs (Prefix/Aggregate/VRF) name their object, e.g. "prefix:12"; their state is stored per object.
+    const tab = ds.tab || "";
     const stateKey = ds.storageKey;
     // Saved state: {all: true} after "Expand all", otherwise {keys: [...]} (a bare array is the old format).
+    const hasSaved = store.get(stateKey, null) !== null;
     const saved = store.get(stateKey, {});
-    const savedAll = !Array.isArray(saved) && saved.all === true;
+    const savedAll = (onPage || tab) && !Array.isArray(saved) && saved.all === true;
     const expanded = new Set(Array.isArray(saved) ? saved : saved.keys || []);
     let allExpanded = false;
     let interacted = false;
@@ -45,6 +55,9 @@
       u.searchParams.set("free", ds.free);
       return u;
     }
+
+    // The whole tree, as after "Expand all": the page's, or a detail tab's rooted at its object.
+    const allUrl = () => (tab ? url(ds.expandUrl, { tab, all: 1 }) : url(ds.subtreeUrl, { key: "__root__" }));
 
     async function fetchRows(u) {
       const resp = await fetch(u, {
@@ -81,7 +94,7 @@
     }
 
     function save() {
-      if (filtered || !onPage) return;
+      if (filtered || !(onPage || tab)) return;
       if (allExpanded) {
         store.set(stateKey, { all: true });
         return;
@@ -193,15 +206,16 @@
         });
         return;
       }
-      if (!onPage) {
-        // Detail tabs: expand each top-level row of this table in turn.
+      if (!onPage && !tab) {
+        // Any other table: expand each top-level row of this table in turn.
         const top = Math.min(...rows().map(level));
         for (const row of rows().filter((r) => level(r) === top)) await expandSubtree(row);
         return;
       }
       table.classList.add("ipt-busy");
       try {
-        const res = await fetchRows(url(ds.subtreeUrl, { key: "__root__" }));
+        // A detail tab's whole tree is rooted at its object; both share one expand_all_limit budget.
+        const res = await fetchRows(allUrl());
         if (!res.ok) return;
         tbody.innerHTML = res.html;
         banner(res.truncated);
@@ -228,14 +242,25 @@
       save();
     }
 
-    async function restore() {
-      if (filtered || !onPage || (!savedAll && expanded.size === 0)) return;
-      const res = savedAll
-        ? await fetchRows(url(ds.subtreeUrl, { key: "__root__" }))
-        : await fetchRows(url(ds.expandUrl, { keys: Array.from(expanded).slice(0, MAX_SAVED_KEYS).join(",") }));
+    async function restore(serverFree) {
+      if (filtered) return;
+      const keys = () => Array.from(expanded).slice(0, MAX_SAVED_KEYS).join(",");
+      let res;
+      if (onPage) {
+        if (!savedAll && expanded.size === 0) return;
+        res = await fetchRows(savedAll ? allUrl() : url(ds.expandUrl, { keys: keys() }));
+      } else if (tab) {
+        // The server opened the tab's object: re-render rooted at it for a saved state (an empty one too, after
+        // "Collapse all"), or when it rendered free space differently from the remembered preference.
+        if (!hasSaved && ds.free === serverFree) return;
+        res = await fetchRows(savedAll ? allUrl() : url(ds.expandUrl, { tab, keys: keys() }));
+      } else {
+        return;
+      }
       // Never overwrite what the user did while the restore was loading.
       if (interacted || !res.ok || !res.html.trim()) return;
       tbody.innerHTML = res.html;
+      tbody.querySelector("tr.ipt-row")?.setAttribute("tabindex", "0");
       banner(res.truncated);
       allExpanded = savedAll;
       if (savedAll) rememberLoaded(rows());
@@ -299,7 +324,7 @@
     document.querySelectorAll('[data-ipt-action="collapse-all"]').forEach((b) => b.addEventListener("click", mark(collapseAll)));
     document.querySelectorAll('[data-ipt-action="toggle-free"]').forEach((sw) => {
       sw.addEventListener("change", () => {
-        store.set(FREE_KEY, sw.checked);
+        rememberFree(sw.checked);
         ds.free = sw.checked ? "1" : "0";
         // Reload so already-expanded nodes are re-rendered with or without free space.
         const u = new URL(location.href);
@@ -308,18 +333,23 @@
       });
     });
 
-    // A remembered free-space preference applies when the URL does not say otherwise.
+    // A remembered free-space preference applies when the URL does not say otherwise. The server reads it from the
+    // cookie; rewriting the cookie here also covers preferences saved before the cookie existed.
+    const serverFree = ds.free;
     if (!new URL(location.href).searchParams.has("free")) {
-      const saved = store.get(FREE_KEY, null);
-      if (saved !== null) {
-        ds.free = saved ? "1" : "0";
+      const savedFree = store.get(FREE_KEY, null);
+      if (savedFree !== null) {
+        rememberFree(savedFree);
+        ds.free = savedFree ? "1" : "0";
         const sw = document.getElementById("ipt-free");
-        if (sw) sw.checked = saved;
+        if (sw) sw.checked = savedFree;
       }
     }
+    // Nothing saved for this tab yet: what the server opened is the state to keep.
+    if (tab && !hasSaved) rememberLoaded(rows());
     const first = tbody.querySelector("tr.ipt-row");
     if (first) first.tabIndex = 0;
-    restore();
+    restore(serverFree);
   }
 
   document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("table.ipt-tree").forEach(init));

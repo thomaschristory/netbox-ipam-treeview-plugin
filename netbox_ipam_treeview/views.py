@@ -12,8 +12,9 @@ from netbox.views import generic
 from utilities.views import ContentTypePermissionRequiredMixin, ViewTab, register_model_view
 
 from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
-from .conf import get_setting
+from .conf import FREE_COOKIE, free_preference, get_setting
 from .tree.builder import NodeNotFound, TreeBuilder
+from .tree.nodes import tab_key
 from .utilization import bulk_utilization
 
 # List-view parameters (paging, sorting, export) that are not filters; the list's "Tree view" button drops them too.
@@ -21,8 +22,7 @@ LIST_ONLY_PARAMS = {"page", "per_page", "sort", "ordering", "export"}
 
 
 def _free(request):
-    raw = request.GET.get("free")
-    return get_setting("show_free_space") if raw is None else raw == "1"
+    return free_preference(request.GET.get("free"), request.COOKIES.get(FREE_COOKIE), get_setting("show_free_space"))
 
 
 def _level(request):
@@ -133,8 +133,16 @@ class NodeSubtreeView(TreeAccessMixin, View):
 class ExpandView(TreeAccessMixin, View):
     def get(self, request):
         builder = self.builder(request)
-        keys = {k for k in request.GET.get("keys", "").split(",") if k}
-        return self.rows(request, builder, builder.expand(keys))
+        keys = [k for k in request.GET.get("keys", "").split(",") if k]
+        tab = request.GET.get("tab")
+        try:
+            # A detail tab restores its own tree, rooted at its object, instead of the page's.
+            roots = builder.tab_roots(tab) if tab else None
+        except NodeNotFound:
+            return self.not_found(request)
+        # all=1 restores "Expand all": every node within the row budget, as subtree/?key=__root__ does on the page.
+        nodes = builder.full_tree(roots) if request.GET.get("all") == "1" else builder.expand(keys, roots)
+        return self.rows(request, builder, nodes)
 
 
 class ColumnsView(TreeAccessMixin, View):
@@ -164,23 +172,29 @@ class _TreeTab(generic.ObjectView):
             raise Http404
         return super().get(request, *args, **kwargs)
 
-    def tree_nodes(self, builder, instance):
-        """Return (nodes, root_key) for this object's tree."""
-        raise NotImplementedError
+    def tree_roots(self, builder, instance):
+        """The top rows of this object's tree."""
+        return builder.object_roots(instance)
 
     def get_extra_context(self, request, instance):
         builder = TreeBuilder(request.user, show_free_space=_free(request))
         try:
-            nodes, root_key = self.tree_nodes(builder, instance)
+            roots = self.tree_roots(builder, instance)
         except NodeNotFound:
-            nodes, root_key = [], "__root__"
+            roots = []
+        # A single root opens with its children; several (an aggregate in more than one VRF) start collapsed.
+        nodes, root_key = _expanded(builder, roots[0]) if len(roots) == 1 else (roots, "__root__")
+        tab = tab_key(instance._meta.model_name, instance.pk)
         return table_context(
             request,
             builder,
             nodes,
             base_template=self.base_template,
             root_key=root_key,
-            storage_key=f"ipam-tree:{instance._meta.model_name}:{instance.pk}",
+            # tree.js restores the saved state through the expand endpoint, rooted at this object. Not named `tab`:
+            # NetBox's ObjectView passes its ViewTab under that name for the tab bar.
+            tree_tab=tab,
+            storage_key=f"ipam-tree:{tab}",
         )
 
 
@@ -209,8 +223,9 @@ class PrefixTreeTab(_TreeTab):
     setting = "show_prefix_tab"
     tab = _tab("show_prefix_tab")
 
-    def tree_nodes(self, builder, instance):
-        return _expanded(builder, builder.node_for(builder._get_prefix(instance.pk)))
+    def tree_roots(self, builder, instance):
+        # Through the builder's queryset: it carries the related objects the row columns show.
+        return builder.object_roots(builder._get_prefix(instance.pk))
 
 
 @register_model_view(Aggregate, "tree", path="tree")
@@ -219,18 +234,9 @@ class AggregateTreeTab(_TreeTab):
     setting = "show_aggregate_tab"
     tab = _tab("show_aggregate_tab")
 
-    def tree_nodes(self, builder, instance):
-        roots = builder.aggregate_roots(instance)
-        if len(roots) == 1:
-            return _expanded(builder, roots[0])
-        return roots, "__root__"
-
 
 @register_model_view(VRF, "tree", path="tree")
 class VRFTreeTab(_TreeTab):
     queryset = VRF.objects.all()
     setting = "show_vrf_tab"
     tab = _tab("show_vrf_tab")
-
-    def tree_nodes(self, builder, instance):
-        return _expanded(builder, builder.node_for(instance))

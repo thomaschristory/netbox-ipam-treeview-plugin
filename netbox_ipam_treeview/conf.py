@@ -1,4 +1,6 @@
 PLUGIN_NAME = "netbox_ipam_treeview"
+# Mirrors the free-space switch (kept in localStorage by tree.js) so the server renders the first rows to match.
+FREE_COOKIE = "ipam_tree_free"
 
 DEFAULTS = {
     "show_menu_item": True,
@@ -21,3 +23,12 @@ def get_setting(key):
     from netbox.plugins.utils import get_plugin_config
 
     return get_plugin_config(PLUGIN_NAME, key, DEFAULTS[key])
+
+
+def free_preference(query, cookie, default):
+    """Free-space rows on or off: the ?free= parameter wins, then the browser's remembered choice, then the setting."""
+    if query is not None:
+        return query == "1"
+    if cookie in ("0", "1"):
+        return cookie == "1"
+    return default

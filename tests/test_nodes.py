@@ -1,6 +1,6 @@
 import pytest
 
-from netbox_ipam_treeview.tree.nodes import ALL_VRFS, agg_key, parse_key, pfx_key, vrf_key
+from netbox_ipam_treeview.tree.nodes import ALL_VRFS, agg_key, parse_key, parse_tab_key, pfx_key, tab_key, vrf_key
 
 
 def test_keys_roundtrip():
@@ -16,3 +16,14 @@ def test_keys_roundtrip():
 def test_parse_key_rejects(bad):
     with pytest.raises(ValueError):
         parse_key(bad)
+
+
+def test_tab_keys_roundtrip():
+    for model in ("prefix", "aggregate", "vrf"):
+        assert parse_tab_key(tab_key(model, 7)) == (model, 7)
+
+
+@pytest.mark.parametrize("bad", [None, "", "prefix", "prefix:", "prefix:x", "device:1", "pfx:1", "vrf:1:2", "vrf:-1"])
+def test_parse_tab_key_rejects(bad):
+    with pytest.raises(ValueError):
+        parse_tab_key(bad)
