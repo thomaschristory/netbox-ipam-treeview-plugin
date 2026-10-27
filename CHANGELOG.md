@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-27
+
 ### Fixed
 
 - Expanding a node that no longer exists (for example a prefix deleted since the page loaded, or a stale key from
