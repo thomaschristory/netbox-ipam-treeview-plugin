@@ -19,5 +19,6 @@ With object-level constraints on `view_prefix` (for example, only prefixes of on
 - **Free-space rows are not shown**, because space taken by hidden prefixes would look free.
 - The *Children* column is empty, since NetBox's cached child counts include hidden prefixes.
 - Expand carets are computed from the visible prefixes only.
+- Aggregate utilization counts only the visible prefixes, so it can differ from the number on the aggregate's own NetBox page.
 
 Users with an unconstrained `view_prefix` get the faster path that uses NetBox's cached prefix depth and child counts.
