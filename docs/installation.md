@@ -13,6 +13,7 @@ NetBox refuses to load the plugin outside the `min_version` / `max_version` rang
 
 | Plugin release | Min NetBox | Max NetBox | Tested in CI |
 |---|---|---|---|
+| 0.2.1 | 4.7.2 | 4.7.99 | 4.7.2 |
 | 0.2.0 | 4.7.2 | 4.7.99 | 4.7.2 |
 | 0.1.1 | 4.7.0 | 4.7.99 | 4.7.2 |
 | 0.1.0 | 4.7.0 | 4.7.99 | 4.7.2 |
