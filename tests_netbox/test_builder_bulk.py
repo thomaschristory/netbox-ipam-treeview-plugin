@@ -1,16 +1,18 @@
-from django.test import TestCase
 from ipam.models import Prefix
+from utilities.testing import TestCase
 
 from netbox_ipam_treeview.tree.builder import TreeBuilder
 from netbox_ipam_treeview.tree.nodes import pfx_key, vrf_key
 
-from .fixtures import make_tree, superuser
+from .fixtures import VIEW_PERMISSIONS, make_tree
 
 
 class SubtreeTest(TestCase):
+    user_permissions = VIEW_PERMISSIONS
+
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.user = superuser()
 
     def test_subtree_of_prefix(self):
         nodes = TreeBuilder(self.user, show_free_space=False).subtree(pfx_key(self.t["p16"].pk), 0)
@@ -80,9 +82,11 @@ class SubtreeTest(TestCase):
 
 
 class ReviewFixesTest(TestCase):
+    user_permissions = VIEW_PERMISSIONS
+
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.user = superuser()
 
     def test_expand_keeps_key_order_when_capped(self):
         keys = [vrf_key(None)] + [f"pfx:{900000 + i}" for i in range(600)]

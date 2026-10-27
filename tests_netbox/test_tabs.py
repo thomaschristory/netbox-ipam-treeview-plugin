@@ -1,17 +1,19 @@
-from django.test import TestCase
 from django.urls import reverse
+from utilities.testing import TestCase
 
 from netbox_ipam_treeview.version import __version__
 
-from .fixtures import make_tree, superuser
+from .fixtures import VIEW_PERMISSIONS, make_tree
 
 TREE = "plugins:netbox_ipam_treeview:tree"
 
 
 class TabTest(TestCase):
+    user_permissions = VIEW_PERMISSIONS
+
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.client.force_login(superuser())
 
     def test_prefix_tab(self):
         r = self.client.get(reverse("ipam:prefix_tree", kwargs={"pk": self.t["p16"].pk}))

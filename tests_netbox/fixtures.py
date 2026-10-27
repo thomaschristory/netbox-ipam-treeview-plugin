@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from ipam.models import RIR, VRF, Aggregate, Prefix
 
 
@@ -18,5 +17,5 @@ def make_tree():
     return dict(agg=agg, red=red, p16=p16, p24=p24, p26=p26, orphan=orphan, r16=r16, r24=r24)
 
 
-def superuser():
-    return get_user_model().objects.create_user("admin-t", is_superuser=True)
+# Unconstrained view access to everything the tree shows; utilities.testing.TestCase grants these to self.user.
+VIEW_PERMISSIONS = ("ipam.view_prefix", "ipam.view_aggregate", "ipam.view_vrf")

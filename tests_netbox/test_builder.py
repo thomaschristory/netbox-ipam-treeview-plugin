@@ -1,13 +1,12 @@
-from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
 from ipam.models import Prefix
 from users.models import ObjectPermission
+from utilities.testing import TestCase
 
 from netbox_ipam_treeview.tree.builder import NodeNotFound, TreeBuilder
 from netbox_ipam_treeview.tree.nodes import agg_key, pfx_key, vrf_key
 
-from .fixtures import make_tree, superuser
+from .fixtures import VIEW_PERMISSIONS, make_tree
 
 
 def kinds(nodes):
@@ -15,9 +14,16 @@ def kinds(nodes):
 
 
 class RootsTest(TestCase):
+    user_permissions = VIEW_PERMISSIONS
+
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.user = superuser()
+
+    def test_unconstrained_user_is_not_restricted(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        self.assertFalse(b.restricted)
+        self.assertEqual(b.children(pfx_key(self.t["p16"].pk), 0)[0].child_count, 1)
 
     def test_roots_grouped_by_vrf_global_first(self):
         roots = TreeBuilder(self.user).roots()
@@ -74,8 +80,8 @@ class RootsTest(TestCase):
 
 class PermissionTest(TestCase):
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.user = get_user_model().objects.create_user("limited")
         perm = ObjectPermission.objects.create(
             name="view some prefixes", actions=["view"], constraints={"prefix__net_contained_or_equal": "10.1.1.0/24"}
         )
@@ -108,8 +114,8 @@ class PermissionTest(TestCase):
 
 class HiddenChildrenTest(TestCase):
     def setUp(self):
+        super().setUp()
         self.t = make_tree()
-        self.user = get_user_model().objects.create_user("containers-only")
         perm = ObjectPermission.objects.create(name="containers", actions=["view"], constraints={"status": "container"})
         perm.object_types.add(ContentType.objects.get_for_model(Prefix))
         perm.users.add(self.user)
@@ -124,7 +130,3 @@ class HiddenChildrenTest(TestCase):
         self.assertEqual([n.key for n in TreeBuilder(self.user).roots()], [vrf_key(None)])
         nodes = TreeBuilder(self.user).filtered(Prefix.objects.filter(pk=self.t["r16"].pk))
         self.assertEqual(nodes, [])
-
-    def test_unrestricted_child_count(self):
-        root = TreeBuilder(superuser(), show_free_space=False).children(pfx_key(self.t["p16"].pk), 0)[0]
-        self.assertEqual(root.child_count, 1)
