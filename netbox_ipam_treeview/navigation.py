@@ -1,9 +1,10 @@
+from django.utils.translation import gettext_lazy as _
 from netbox.plugins import PluginMenuItem
 
 from .conf import get_setting
 
 LINK = "plugins:netbox_ipam_treeview:tree"
-LABEL = "Prefix Tree"
+LABEL = _("Prefix Tree")
 PERMISSIONS = ["ipam.view_prefix"]
 
 

@@ -34,7 +34,7 @@ Issues = "https://github.com/thomaschristory/netbox-ipam-treeview-plugin/issues"
 netbox_ipam_treeview = "netbox_ipam_treeview:config"
 
 [dependency-groups]
-dev = ["pytest>=8.3", "ruff>=0.12", "netaddr>=1.3"]
+dev = ["pytest>=8.3", "ruff>=0.12", "netaddr>=1.3", "django>=6.1"]
 docs = [
     "zensical>=0.0.65",
 ]
