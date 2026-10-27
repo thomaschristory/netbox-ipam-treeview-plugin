@@ -10,6 +10,19 @@
 | *Tree* tab on an aggregate | That aggregate and the prefixes it covers. |
 | *Tree* tab on a VRF | That VRF's prefixes. |
 
+By default the page has its own *IPAM Tree* menu; `menu_location` moves the entry to the Plugins menu or right below
+*IPAM → Prefixes* (see [Configuration](configuration.md#where-the-tree-appears)).
+
+![The IPAM Tree menu in NetBox's navigation](img/menu.png)
+
+The *Tree view* button on the prefix list opens the tree with the list's filters applied:
+
+![The Tree view button on NetBox's prefix list](img/list-button.png)
+
+The *Tree* tab on a prefix shows that prefix and its children, with free space:
+
+![The Tree tab on a prefix page](img/prefix-tab.png)
+
 ## Levels
 
 The tree reads **VRF → Aggregate → Prefix → child prefix**:
@@ -35,13 +48,24 @@ Free-space rows show the unallocated blocks between a node's children, as the la
 - Under a global container, prefixes from VRFs also count as used space, as in NetBox's own child-prefix view.
 - A node shows at most `max_gap_rows` free-space rows; the rest are summarised in one row.
 
+![Free-space rows between allocated prefixes, each with a Create link](img/free-space.png)
+
 ## Filters
 
 The filter panel is NetBox's own prefix filter form. With a filter applied, the tree shows the matching prefixes plus their ancestors, greyed out, so you can see where each match sits. Filtered trees are capped by `expand_all_limit`.
 
+Here a search for `10.1.3` shows the matching prefixes in both the Global table and the CORP VRF, with their ancestors
+greyed out:
+
+![A filtered tree: matches with greyed-out ancestors](img/filtered.png)
+
 ## Columns
 
-The column picker in the toolbar chooses which columns to show and is saved in your NetBox user preferences. Available columns:
+The column picker in the toolbar chooses which columns to show and is saved in your NetBox user preferences.
+
+![The column picker](img/columns.png)
+
+Available columns:
 
 | Key | Column |
 |---|---|

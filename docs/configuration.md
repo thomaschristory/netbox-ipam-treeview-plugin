@@ -23,6 +23,10 @@ PLUGINS_CONFIG = {
 
 NetBox has no plugin API to add entries to its core menus. `menu_location = "ipam"` is opt-in: the plugin patches NetBox's IPAM menu at startup to insert its entry right below *Prefixes*. This relies on NetBox internals that may change between NetBox releases; if the IPAM menu does not look as expected, the entry falls back to the plugin's own *IPAM Tree* menu.
 
+The default, `"menu"`, looks like this:
+
+![The IPAM Tree menu](img/menu.png)
+
 ## Tree shape
 
 | Setting | Default | Meaning |
