@@ -98,7 +98,7 @@
       if (!el || !el.classList.contains("ipt-banner")) {
         el = document.createElement("div");
         el.className = "alert alert-warning ipt-banner d-none";
-        el.textContent = "Row limit reached: showing a partial tree. Narrow the view with filters.";
+        el.textContent = ds.truncatedMessage;
         card.before(el);
       }
       el.classList.toggle("d-none", !show);

@@ -9,6 +9,7 @@ from django import template
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 from utilities.templatetags.builtins.tags import static_with_params
 
 from netbox_ipam_treeview.version import __version__
@@ -63,9 +64,9 @@ def util_bar(utilization):
     inside, outside = (label, "") if value >= 35 else ("", format_html('<span class="progress-label">{}</span>', label))
     return format_html(
         '<div class="progress"><div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{}" '
-        'aria-label="Utilization: {}" class="progress-bar {}" style="width: {}%">{}</div>{}</div>',
+        'aria-label="{}" class="progress-bar {}" style="width: {}%">{}</div>{}</div>',
         value,
-        label,
+        _("Utilization: {}").format(label),
         bar_class,
         value,
         inside,

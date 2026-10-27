@@ -34,6 +34,7 @@ class UtilBarTest(TestCase):
         self.assertIn("bg-secondary", util_bar(100))
         self.assertIn(">50.0%</div>", util_bar(50))
         self.assertIn('style="width: 12.5%"', util_bar(12.5))
+        self.assertIn('aria-label="Utilization: 12.5%"', util_bar(12.5))
 
     def test_none(self):
         from netbox_ipam_treeview.templatetags.ipam_tree import util_bar

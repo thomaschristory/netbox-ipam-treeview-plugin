@@ -31,6 +31,7 @@ class ViewTest(TestCase):
         self.assertContains(r, "RED")
         self.assertNotContains(r, "10.1.1.0/26")
         self.assertContains(r, reverse(NS + "columns"))  # column picker for authenticated users
+        self.assertContains(r, 'data-truncated-message="Row limit reached: showing a partial tree.')
 
     def test_superuser_sees_tree_and_row_actions(self):
         t = make_tree()

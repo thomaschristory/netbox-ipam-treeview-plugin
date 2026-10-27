@@ -4,6 +4,7 @@ from bisect import bisect_left, bisect_right
 
 import netaddr
 from django.db.models import Exists, OuterRef
+from django.utils.translation import gettext as _
 from ipam.models import VRF, Aggregate, Prefix
 
 from ..conf import get_setting
@@ -259,7 +260,7 @@ class TreeBuilder:
         nodes = []
         for v in order:
             node = self._agg_node(agg, v, 0, None)
-            node.label = names.get(v, "Global")
+            node.label = names.get(v, _("Global"))
             nodes.append(node)
         return nodes
 

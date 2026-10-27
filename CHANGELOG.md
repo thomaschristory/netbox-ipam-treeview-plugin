@@ -17,6 +17,8 @@ versioning: [SemVer](https://semver.org/).
 
 ### Fixed
 
+- The *Prefix Tree* menu label, the plugin name and description, and the row-limit banner shown by `tree.js` are
+  now translatable (#14).
 - `tree.js` and `tree.css` URLs now carry the plugin version (`?v=`), so browsers stop running a cached script
   against new server fragments after an upgrade (#10).
 

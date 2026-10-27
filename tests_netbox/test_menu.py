@@ -15,3 +15,10 @@ class MenuTest(SimpleTestCase):
         ipam_links = [item.link for group in IPAM_MENU.groups for item in group.items]
         plugin_links = [item.link for items in registry["plugins"]["menu_items"].values() for item in items]
         self.assertEqual((ipam_links + plugin_links).count(TREE), 1)
+
+    def test_label_is_translatable(self):
+        from django.utils.functional import Promise
+
+        item = next(i for g in IPAM_MENU.groups for i in g.items if i.link == TREE)
+        self.assertIsInstance(item.link_text, Promise)
+        self.assertEqual(str(item.link_text), "Prefix Tree")
