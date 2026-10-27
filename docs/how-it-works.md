@@ -10,7 +10,7 @@ The tree page renders the top levels only. Opening a row fetches its children as
 |---|---|
 | `children/?key=...` | The direct children of one node. |
 | `subtree/?key=...` | A node's whole subtree (Alt+click, `*`, *Expand all*). |
-| `expand/?keys=...` | The rows needed to reopen a set of nodes. With `tab=prefix:<id>`, `aggregate:<id>` or `vrf:<id>`, rooted at that object, as on its *Tree* tab. |
+| `expand/?keys=...` | The rows needed to reopen a set of nodes. With `tab=prefix:<id>`, `aggregate:<id>` or `vrf:<id>`, rooted at that object, as on its *Tree* tab; adding `all=1` returns its whole tree (*Expand all*). |
 
 Node keys are `vrf:<id>` (with `vrf:0` for Global), `agg:<id>@<vrf>` for an aggregate under a VRF group, and `pfx:<id>`.
 

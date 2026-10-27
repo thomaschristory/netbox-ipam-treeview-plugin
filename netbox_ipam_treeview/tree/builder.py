@@ -371,10 +371,10 @@ class TreeBuilder:
             by_key[key].partial = True
             key = by_key[key].parent_key
 
-    def full_tree(self):
-        """Roots plus every root's subtree, sharing one row budget."""
+    def full_tree(self, roots=None):
+        """Roots (the page's unless given) plus every root's subtree, sharing one row budget."""
         out, budget, limit = [], self.limit, self.limit
-        for root in self.roots():
+        for root in self.roots() if roots is None else roots:
             out.append(root)
             if not root.has_children:
                 continue

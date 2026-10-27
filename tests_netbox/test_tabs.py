@@ -120,6 +120,38 @@ class TabStateTest(TestCase):
         self.assertContains(r, f'data-key="{pfx_key(self.t["r16"].pk)}"')
         self.assertNotContains(r, f'data-key="{pfx_key(self.t["p16"].pk)}"')
 
+    def test_expand_all_restores_whole_tab_tree(self):
+        # "Expand all" on a tab is saved as {all: true} and restored with all=1, not as a capped list of keys.
+        p16, p24 = pfx_key(self.t["p16"].pk), pfx_key(self.t["p24"].pk)
+        r = self.client.get(reverse(EXPAND), {"tab": tab_key("prefix", self.t["p16"].pk), "all": "1", "free": "0"})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn("X-Tree-Truncated", r)
+        self.assertContains(r, "10.1.1.0/26")
+        self.assertNotContains(r, 'data-key="vrf:')
+        self.assertNotContains(r, "10.1.9.0/24")  # the VRF RED twin of 10.1.0.0/16 is not under this tab
+        for key in (p16, p24):
+            self.assertContains(r, f'data-key="{key}"')
+        self.assertNotContains(r, 'aria-expanded="false"')
+
+    def test_expand_all_aggregate_tab(self):
+        agg = self.t["agg"].pk
+        r = self.client.get(reverse(EXPAND), {"tab": tab_key("aggregate", agg), "all": "1", "free": "0"})
+        for p in ("p16", "p24", "p26", "r16", "r24"):
+            self.assertContains(r, f'data-key="{pfx_key(self.t[p].pk)}"')
+        self.assertNotContains(r, f'data-key="{pfx_key(self.t["orphan"].pk)}"')
+
+    def test_expand_all_tab_truncated(self):
+        params = {"tab": tab_key("aggregate", self.t["agg"].pk), "all": "1", "free": "0"}
+        with self.settings(PLUGINS_CONFIG={"netbox_ipam_treeview": {"expand_all_limit": 2}}):
+            r = self.client.get(reverse(EXPAND), params)
+        self.assertEqual(r["X-Tree-Truncated"], "1")
+        self.assertContains(r, f'data-key="{pfx_key(self.t["p16"].pk)}"')
+        self.assertNotContains(r, f'data-key="{pfx_key(self.t["r24"].pk)}"')
+
+    def test_expand_all_unknown_tab_404(self):
+        r = self.client.get(reverse(EXPAND), {"tab": "prefix:999999", "all": "1"})
+        self.assertEqual(r.status_code, 404)
+
     def test_expand_unknown_tab_404(self):
         for tab in ("prefix:999999", "vrf:999999", "garbage"):
             r = self.client.get(reverse(EXPAND), {"tab": tab, "keys": ""})

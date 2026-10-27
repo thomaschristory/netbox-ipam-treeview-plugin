@@ -91,6 +91,25 @@ class SubtreeTest(TestCase):
         self.assertEqual(len(nodes), 2)
         self.assertTrue(b.truncated)
 
+    def test_full_tree_from_tab_roots(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        nodes = b.full_tree(b.tab_roots(tab_key("prefix", self.t["p16"].pk)))
+        self.assertEqual(
+            [(n.obj.pk, n.level, n.expanded) for n in nodes],
+            [(self.t["p16"].pk, 0, True), (self.t["p24"].pk, 1, True), (self.t["p26"].pk, 2, False)],
+        )
+        self.assertFalse(b.truncated)
+
+    def test_full_tree_from_tab_roots_shares_limit(self):
+        b = TreeBuilder(self.user, show_free_space=False, limit=2)
+        agg, red = self.t["agg"].pk, self.t["red"].pk
+        nodes = b.full_tree(b.tab_roots(tab_key("aggregate", agg)))
+        # The global group uses the whole budget; the RED group is listed but left unexpanded.
+        self.assertTrue(b.truncated)
+        self.assertEqual(nodes[-1].key, agg_key(agg, red))
+        self.assertFalse(nodes[-1].expanded)
+        self.assertEqual(b.limit, 2)
+
     def test_filtered_shows_ancestors_as_context(self):
         nodes = TreeBuilder(self.user).filtered(Prefix.objects.filter(pk=self.t["p26"].pk))
         self.assertEqual(

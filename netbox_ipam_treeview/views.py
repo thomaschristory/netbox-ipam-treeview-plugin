@@ -140,7 +140,9 @@ class ExpandView(TreeAccessMixin, View):
             roots = builder.tab_roots(tab) if tab else None
         except NodeNotFound:
             return self.not_found(request)
-        return self.rows(request, builder, builder.expand(keys, roots))
+        # all=1 restores "Expand all": every node within the row budget, as subtree/?key=__root__ does on the page.
+        nodes = builder.full_tree(roots) if request.GET.get("all") == "1" else builder.expand(keys, roots)
+        return self.rows(request, builder, nodes)
 
 
 class ColumnsView(TreeAccessMixin, View):
