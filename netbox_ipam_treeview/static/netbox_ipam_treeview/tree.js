@@ -55,9 +55,23 @@
       // login page. Reload so the browser lands on the login form (with next= this page), not rows of login HTML.
       if (resp.redirected) {
         location.reload();
-        return { ok: false, html: "", truncated: false };
+        return { ok: false, status: 0, html: "", truncated: false };
       }
-      return { ok: resp.ok, html: await resp.text(), truncated: resp.headers.get("X-Tree-Truncated") === "1" };
+      return {
+        ok: resp.ok,
+        status: resp.status,
+        html: await resp.text(),
+        truncated: resp.headers.get("X-Tree-Truncated") === "1",
+      };
+    }
+
+    // A 404 fragment carries the server's error row (e.g. the node was deleted since the page loaded). Only that row
+    // is kept: any other error body (NetBox's 403 or 404 page) is a full HTML page, not rows.
+    function errorRows(res) {
+      if (res.status !== 404) return [];
+      const t = document.createElement("template");
+      t.innerHTML = res.html;
+      return Array.from(t.content.querySelectorAll("tr.ipt-error"));
     }
 
     function descendants(row) {
@@ -115,7 +129,15 @@
       row.classList.remove("ipt-failed");
       try {
         const res = await fetchRows(url(endpoint, { key: row.dataset.key, level: row.dataset.level }));
-        if (!res.ok) throw new Error(`HTTP error loading ${row.dataset.key}`);
+        if (!res.ok) {
+          const errors = errorRows(res);
+          if (errors.length) {
+            descendants(row).forEach((r) => r.remove());
+            row.after(...errors);
+            delete row.dataset.loaded; // reopening retries instead of showing the error row
+          }
+          throw new Error(`HTTP ${res.status} loading ${row.dataset.key}`);
+        }
         descendants(row).forEach((r) => r.remove());
         row.insertAdjacentHTML("afterend", res.html);
         row.dataset.loaded = "1";

@@ -5,6 +5,12 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Expanding a node that no longer exists (for example a prefix deleted since the page loaded, or a stale key from
+  remembered state) now shows the server's *Not found or no permission* row under it instead of only a red chevron.
+  403 responses and login redirects are handled as before (#23).
+
 ## [0.2.0] - 2026-10-27
 
 ### Added

@@ -1,5 +1,5 @@
 {% load i18n helpers ipam_tree %}{% if error %}
-<tr class="ipt-error"><td colspan="99" class="text-danger"><i class="mdi mdi-alert"></i> {% trans "Not found or no permission." %}</td></tr>
+<tr class="ipt-error" data-level="{{ level }}" data-parent="{{ parent_key }}" style="--ipt-level: {{ level }}"><td colspan="99" class="ipt-name text-danger"><i class="mdi mdi-alert"></i> {% trans "Not found or no permission." %}</td></tr>
 {% else %}{% for node in nodes %}
 <tr class="ipt-row ipt-{{ node.kind }}{% if node.context %} ipt-context{% endif %}" role="row" tabindex="-1"
     data-key="{{ node.key }}" data-parent="{{ node.parent_key|default:'' }}" data-level="{{ node.level }}" aria-level="{{ node.level|add:1 }}"
