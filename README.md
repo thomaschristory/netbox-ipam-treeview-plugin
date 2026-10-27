@@ -30,13 +30,13 @@ in place, one-click **Expand all** / **Collapse all**, and the tree remembering 
 
 ## Compatibility
 
-| Plugin | NetBox        | Python      |
-|--------|---------------|-------------|
-| next   | 4.7.2 – 4.7.x | 3.12 – 3.14 |
-| 0.1.x  | 4.7.0 – 4.7.x | 3.12 – 3.14 |
+| Plugin       | NetBox        | Python      |
+|--------------|---------------|-------------|
+| next release | 4.7.2 – 4.7.x | 3.12 – 3.14 |
+| 0.1.x        | 4.7.0 – 4.7.x | 3.12 – 3.14 |
 
-NetBox 4.7.2 or later is required from the next release on: 4.7.0 and 4.7.1 stored plaintext API tokens from
-background bulk requests in job results. See the [per-release table](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/installation/#compatibility).
+From the next release on, NetBox 4.7.2 or a later 4.7.x release is required: 4.7.0 and 4.7.1 recorded plaintext
+API tokens created through background bulk requests in job results. See the [per-release table](https://thomaschristory.github.io/netbox-ipam-treeview-plugin/installation/#compatibility).
 
 ## Installation
 
