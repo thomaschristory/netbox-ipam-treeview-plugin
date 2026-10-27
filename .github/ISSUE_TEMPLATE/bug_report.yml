@@ -52,7 +52,7 @@ body:
         - Tree tab on an Aggregate
         - Tree tab on a VRF
         - Tree view button on the prefix list
-        - IPAM menu entry
+        - Menu entry
     validations:
       required: true
 

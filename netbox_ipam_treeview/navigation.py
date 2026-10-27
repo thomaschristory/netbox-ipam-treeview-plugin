@@ -1,3 +1,5 @@
+import logging
+
 from django.utils.translation import gettext_lazy as _
 from netbox.plugins import PluginMenu, PluginMenuItem
 
@@ -8,6 +10,9 @@ LABEL = _("Prefix Tree")
 PERMISSIONS = ["ipam.view_prefix"]
 MENU_LABEL = _("IPAM Tree")
 MENU_ICON = "mdi mdi-file-tree"
+LOCATIONS = ("menu", "plugins", "ipam")
+
+logger = logging.getLogger("netbox_ipam_treeview")
 
 
 def _add_to_ipam_menu(ipam_menu=None):
@@ -44,6 +49,8 @@ def build(show, location, ipam_menu=None):
     """
     if not show:
         return None, ()
+    if location not in LOCATIONS:
+        logger.warning('Unknown menu_location %r (expected one of %s); using "menu"', location, ", ".join(LOCATIONS))
     if location == "ipam" and _add_to_ipam_menu(ipam_menu):
         return None, ()
     item = PluginMenuItem(link=LINK, link_text=LABEL, permissions=PERMISSIONS)

@@ -73,5 +73,8 @@ class MenuLocationTest(SimpleTestCase):
         self.assertNotIn(TREE, links(self.ipam))
 
     def test_unknown_location_uses_own_menu(self):
-        menu, items = navigation.build(True, "bogus", self.ipam)
+        with self.assertLogs("netbox_ipam_treeview", "WARNING") as logs:
+            menu, items = navigation.build(True, "IPAM", self.ipam)
         self.assertEqual(links(menu), [TREE])
+        self.assertNotIn(TREE, links(self.ipam))
+        self.assertIn("'IPAM'", logs.output[0])
