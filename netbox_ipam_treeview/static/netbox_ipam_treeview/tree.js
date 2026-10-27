@@ -214,6 +214,8 @@
         if (r.hasAttribute("aria-expanded")) r.setAttribute("aria-expanded", "false");
         r.classList.toggle("ipt-hidden", level(r) > top);
       });
+      // Error rows sit under a node that failed to load: they go with their parent.
+      tbody.querySelectorAll("tr.ipt-error").forEach((r) => r.classList.toggle("ipt-hidden", level(r) > top));
       expanded.clear();
       allExpanded = false;
       save();
