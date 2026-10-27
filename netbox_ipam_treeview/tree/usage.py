@@ -20,6 +20,28 @@ def cover_blocks(networks, max_blocks=MAX_COVER_CLAUSES):
     return blocks
 
 
+class NetworkIndex:
+    """Networks sorted by address, for quick "which of them lie inside this network" lookups."""
+
+    def __init__(self, networks):
+        self.networks = sorted(
+            (netaddr.IPNetwork(n) for n in networks), key=lambda n: (n.version, n.first, n.prefixlen)
+        )
+        self._keys = [(n.version, n.first) for n in self.networks]
+
+    def within(self, network, *, or_equal=False):
+        """Indexed networks inside `network`; `or_equal` also returns networks equal to it."""
+        network = netaddr.IPNetwork(network)
+        lo = bisect_left(self._keys, (network.version, network.first))
+        hi = bisect_right(self._keys, (network.version, network.last))
+        # A CIDR block starting inside `network` is either inside it or (same start, shorter mask) contains it.
+        return [
+            n
+            for n in self.networks[lo:hi]
+            if n.prefixlen > network.prefixlen or (or_equal and n.prefixlen == network.prefixlen)
+        ]
+
+
 def merge_intervals(intervals):
     """Merge overlapping or adjacent (start, end) integer intervals."""
     merged = []

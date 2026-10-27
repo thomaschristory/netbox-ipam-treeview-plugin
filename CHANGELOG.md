@@ -15,6 +15,8 @@ versioning: [SemVer](https://semver.org/).
 - The free-space switch now applies to the rows rendered with the page: with free space switched off, a freshly opened
   *Tree* tab no longer shows free-space rows. The choice is also kept in an `ipam_tree_free` cookie so the server can
   render it (#24).
+- Under a VRF group, an aggregate's utilization counts only that VRF's prefixes instead of every VRF's, computed in
+  one query for all aggregate rows. Without `group_by_vrf` it is still NetBox's own number (#26).
 
 ## [0.2.0] - 2026-10-27
 

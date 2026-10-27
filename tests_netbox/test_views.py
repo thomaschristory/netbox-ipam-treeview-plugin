@@ -179,6 +179,92 @@ class QueryScalingTest(TestCase):
     def test_children_query_count_does_not_grow_with_rows(self):
         self.assertEqual(self._children_queries(3), self._children_queries(30))
 
+    def _vrf_children_queries(self, n):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from ipam.models import RIR, Aggregate, Prefix
+
+        rir, _ = RIR.objects.get_or_create(name="R", slug="r")
+        for i in range(n):
+            Aggregate.objects.create(prefix=f"{100 + n}.{i}.0.0/16", rir=rir)
+            Prefix.objects.create(prefix=f"{100 + n}.{i}.0.0/24")
+        with CaptureQueriesContext(connection) as ctx:
+            r = self.client.get(reverse(NS + "children"), {"key": vrf_key(None), "level": "0"})
+        self.assertContains(r, 'data-key="agg:', count=Aggregate.objects.count())
+        return len(ctx.captured_queries)
+
+    def test_aggregate_rows_query_count_does_not_grow_with_rows(self):
+        self.assertEqual(self._vrf_children_queries(3), self._vrf_children_queries(30))
+
+
+class AggregateUtilizationViewTest(TestCase):
+    """Under a VRF group, an aggregate's utilization counts only that VRF's prefixes (#26)."""
+
+    user_permissions = VIEW_PERMISSIONS
+
+    def setUp(self):
+        super().setUp()
+        from ipam.models import Prefix
+
+        self.t = make_tree()
+        Prefix.objects.create(prefix="10.2.0.0/15", vrf=self.t["red"])
+        Prefix.objects.create(prefix="10.8.0.0/16")
+        # 10/8 holds 10.1/16 + 10.8/16 in the global table (2/256) and 10.1/16 + 10.2/15 in RED (3/256);
+        # across all VRFs their union is 4/256.
+        self.global_bar, self.red_bar = 'aria-valuenow="0.78125"', 'aria-valuenow="1.171875"'
+
+    def test_same_aggregate_differs_per_vrf_group(self):
+        agg = self.t["agg"].pk
+        r = self.client.get(reverse(NS + "children"), {"key": vrf_key(None), "level": "0"})
+        self.assertContains(r, f'data-key="agg:{agg}@0"')
+        self.assertContains(r, self.global_bar)
+        self.assertNotContains(r, self.red_bar)
+        r = self.client.get(reverse(NS + "children"), {"key": vrf_key(self.t["red"].pk), "level": "0"})
+        self.assertContains(r, f'data-key="agg:{agg}@{self.t["red"].pk}"')
+        self.assertContains(r, self.red_bar)
+        self.assertNotContains(r, self.global_bar)
+
+    def test_aggregate_tab_rows_are_per_vrf(self):
+        r = self.client.get(reverse("ipam:aggregate_tree", kwargs={"pk": self.t["agg"].pk}))
+        self.assertContains(r, self.global_bar)
+        self.assertContains(r, self.red_bar)
+
+    def test_ungrouped_tree_keeps_netbox_number(self):
+        with self.settings(PLUGINS_CONFIG={"netbox_ipam_treeview": {"group_by_vrf": False}}):
+            r = self.client.get(reverse(NS + "tree"))
+        self.assertContains(r, f'data-key="agg:{self.t["agg"].pk}@*"')
+        self.t["agg"].refresh_from_db()  # created from a string; get_utilization() needs an IPNetwork
+        self.assertEqual(self.t["agg"].get_utilization(), 1.5625)
+        self.assertContains(r, 'aria-valuenow="1.5625"')
+        self.assertNotContains(r, self.global_bar)
+        self.assertNotContains(r, self.red_bar)
+
+
+class ConstrainedAggregateUtilizationViewTest(TestCase):
+    """A constrained user's aggregate bar counts only the prefixes that user can see (#26 review)."""
+
+    user_permissions = ("ipam.view_aggregate", "ipam.view_vrf")
+
+    def setUp(self):
+        super().setUp()
+        from django.contrib.contenttypes.models import ContentType
+        from ipam.models import Prefix
+        from users.models import ObjectPermission
+
+        self.t = make_tree()
+        Prefix.objects.create(prefix="10.2.0.0/15", vrf=self.t["red"])  # hidden from the user
+        perm = ObjectPermission.objects.create(
+            name="view one prefix", actions=["view"], constraints={"prefix__net_contained_or_equal": "10.1.9.0/24"}
+        )
+        perm.object_types.add(ContentType.objects.get_for_model(Prefix))
+        perm.users.add(self.user)
+
+    def test_hidden_vrf_prefixes_not_counted(self):
+        r = self.client.get(reverse(NS + "children"), {"key": vrf_key(self.t["red"].pk), "level": "0"})
+        self.assertContains(r, f'data-key="agg:{self.t["agg"].pk}@{self.t["red"].pk}"')
+        self.assertContains(r, f'aria-valuenow="{100 / 65536}"')  # only 10.1.9.0/24 of 10/8
+        self.assertNotContains(r, 'aria-valuenow="1.171875"')  # RED's 10.1/16 + 10.2/15, both hidden
+
 
 class ReviewViewFixesTest(TestCase):
     user_permissions = VIEW_PERMISSIONS

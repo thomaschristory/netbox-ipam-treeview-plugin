@@ -3,6 +3,7 @@ from netaddr import IPNetwork as N
 
 from netbox_ipam_treeview.tree.usage import (
     MAX_COVER_CLAUSES,
+    NetworkIndex,
     container_utilization,
     cover_blocks,
     host_utilization,
@@ -60,3 +61,19 @@ def test_cover_blocks_single_block_family_above_limit():
     # Regression: spanning_cidr() raised ValueError for a family that merged into a single block.
     v4 = [f"10.{i}.0.0/24" for i in range(0, 2 * (MAX_COVER_CLAUSES + 1), 2)]
     assert cover_blocks(v4 + ["2001:db8::/32", "2001:db8::/64"]) == [N("10.0.0.0/8"), N("2001:db8::/32")]
+
+
+def test_network_index_within_excludes_the_network_itself():
+    index = NetworkIndex(["10.0.0.0/16", "10.0.1.0/24", "10.1.0.0/24", "10.0.0.0/8", "fd00::/64", "10.0.255.0/24"])
+    assert index.within(N("10.0.0.0/16")) == [N("10.0.1.0/24"), N("10.0.255.0/24")]
+
+
+def test_network_index_within_or_equal():
+    index = NetworkIndex(["10.0.0.0/16", "10.0.1.0/24", "10.0.0.0/8"])
+    assert index.within(N("10.0.0.0/16"), or_equal=True) == [N("10.0.0.0/16"), N("10.0.1.0/24")]
+
+
+def test_network_index_keeps_versions_apart():
+    index = NetworkIndex(["0.0.0.0/8", "::/64"])
+    assert index.within(N("::/0")) == [N("::/64")]
+    assert index.within(N("0.0.0.0/0")) == [N("0.0.0.0/8")]

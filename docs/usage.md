@@ -87,6 +87,8 @@ Available columns:
 
 Utilization uses the same rules as NetBox's prefix pages: a container counts its child prefixes, other prefixes count their IP addresses and ranges, and pools or prefixes marked utilized are full.
 
+An aggregate's utilization is the share of it covered by prefixes. Under a VRF group, only that VRF's prefixes count (the global table's under *Global*), so the same aggregate can show a different value in each group, and so can its rows in the aggregate's *Tree* tab. Without `group_by_vrf`, the aggregate counts the prefixes of every VRF, the number NetBox shows on the aggregate's own page. For a user whose prefix view permission is constrained, aggregates count only the prefixes that user can see.
+
 ## Remembered state
 
 The page remembers which nodes were open, in the browser's local storage, and reopens them when you come back. After *Expand all*, it remembers that instead and expands everything again (still within `expand_all_limit`).

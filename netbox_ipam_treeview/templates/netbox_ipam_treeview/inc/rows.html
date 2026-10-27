@@ -28,6 +28,6 @@
 {% if tree_perms.add %}<a class="btn btn-sm btn-ghost-success" title="{% trans 'Add child prefix' %}" href="{{ prefix_add_url }}?{% if node.obj.vrf_id %}vrf={{ node.obj.vrf_id }}&{% endif %}scope_type={{ node.obj.scope_type_id|default:'' }}&scope={{ node.obj.scope_id|default:'' }}&return_url={{ return_url|urlencode }}"><i class="mdi mdi-plus-thick"></i></a>{% endif %}
 {% if tree_perms.change %}<a class="btn btn-sm btn-ghost-warning" title="{% trans 'Edit' %}" href="{% obj_url node.obj 'edit' %}?return_url={{ return_url|urlencode }}"><i class="mdi mdi-pencil"></i></a>{% endif %}
 {% if tree_perms.delete %}<a class="btn btn-sm btn-ghost-danger" title="{% trans 'Delete' %}" href="{% obj_url node.obj 'delete' %}?return_url={{ return_url|urlencode }}"><i class="mdi mdi-trash-can-outline"></i></a>{% endif %}
-</span>{% endif %}{% elif node.kind == "aggregate" and col == "utilization" %}{% utilization_graph node.obj.get_utilization %}{% endif %}</td>{% endfor %}
+</span>{% endif %}{% elif node.kind == "aggregate" and col == "utilization" %}{{ node.utilization|util_bar }}{% endif %}</td>{% endfor %}
 </tr>
 {% endfor %}{% endif %}

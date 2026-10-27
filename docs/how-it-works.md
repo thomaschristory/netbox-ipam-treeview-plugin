@@ -26,6 +26,8 @@ Aggregates have no VRF in NetBox, so under each VRF group the plugin shows the a
 
 Utilization is computed in bulk, with a constant number of queries per VRF, instead of one call to `Prefix.get_utilization()` per row. The integration tests check that the bulk numbers equal NetBox's own for every prefix of the test data.
 
+Under a VRF group, aggregate utilization counts only that VRF's prefixes, and it is computed for every aggregate row in a single query.
+
 ## Performance
 
 - Query counts stay constant regardless of the number of rows; the integration tests guard this.

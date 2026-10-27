@@ -15,7 +15,7 @@ from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
 from .conf import FREE_COOKIE, free_preference, get_setting
 from .tree.builder import NodeNotFound, TreeBuilder
 from .tree.nodes import tab_key
-from .utilization import bulk_utilization
+from .utilization import bulk_aggregate_utilization, bulk_utilization
 
 # List-view parameters (paging, sorting, export) that are not filters; the list's "Tree view" button drops them too.
 LIST_ONLY_PARAMS = {"page", "per_page", "sort", "ordering", "export"}
@@ -37,9 +37,17 @@ def table_context(request, builder, nodes, **extra):
     columns = resolve_columns(request.user)
     if "utilization" in columns:
         values = bulk_utilization([n.obj for n in nodes if n.kind == "prefix"])
+        # Under a VRF group an aggregate counts that VRF's prefixes only; ungrouped (ALL_VRFS) it is NetBox's number.
+        # Constrained users count only the prefixes they can see, so a VRF's hidden occupancy is not revealed.
+        agg_values = bulk_aggregate_utilization(
+            [(n.obj, n.vrf_id) for n in nodes if n.kind == "aggregate"],
+            prefixes=builder.prefixes if builder.restricted else None,
+        )
         for n in nodes:
             if n.kind == "prefix":
                 n.utilization = values.get(n.obj.pk)
+            elif n.kind == "aggregate":
+                n.utilization = agg_values.get((n.obj.pk, n.vrf_id))
     return {
         "nodes": nodes,
         "columns": columns,
