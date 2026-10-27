@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `config` is now defined unconditionally in `__init__.py`, per NetBox's plugin layout. If importing NetBox fails, the
+  original error is raised instead of a missing-`config` error (#11).
+
 ### Fixed
 
 - `tree.js` and `tree.css` URLs now carry the plugin version (`?v=`), so browsers stop running a cached script
