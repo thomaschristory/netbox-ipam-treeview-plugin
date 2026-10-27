@@ -28,7 +28,7 @@ Install the package into the NetBox virtual environment (see [Installation](inst
 PLUGINS = ["netbox_ipam_treeview"]
 ```
 
-Run `collectstatic` and restart NetBox. The tree lives at `/plugins/ipam-tree/`, in the menu under *IPAM → Prefixes → Prefix Tree*.
+Run `collectstatic` and restart NetBox. The tree lives at `/plugins/ipam-tree/`, in the menu under *IPAM Tree → Prefix Tree* (or below *IPAM → Prefixes* with `menu_location = "ipam"`).
 
 ## Compatibility
 

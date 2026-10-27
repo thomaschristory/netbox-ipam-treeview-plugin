@@ -15,13 +15,13 @@ PLUGINS_CONFIG = {
 | Setting | Default | Meaning |
 |---|---|---|
 | `show_menu_item` | `True` | Show the *Prefix Tree* menu entry. |
-| `menu_location` | `"ipam"` | `"ipam"`: IPAM menu, right below *Prefixes*; `"plugins"`: the Plugins menu. |
+| `menu_location` | `"menu"` | `"menu"`: the plugin's own *IPAM Tree* menu; `"plugins"`: the shared Plugins menu; `"ipam"`: IPAM menu, right below *Prefixes* (see below). |
 | `show_list_toggle` | `True` | *Tree view* button on the native prefix list. |
 | `show_prefix_tab` | `True` | *Tree* tab on prefix pages. |
 | `show_aggregate_tab` | `True` | *Tree* tab on aggregate pages. |
 | `show_vrf_tab` | `True` | *Tree* tab on VRF pages. |
 
-NetBox has no plugin API to add entries to its core menus. With `menu_location = "ipam"` the plugin inserts its entry into the IPAM menu at startup; if that ever fails, it falls back to the Plugins menu.
+NetBox has no plugin API to add entries to its core menus. `menu_location = "ipam"` is opt-in: the plugin patches NetBox's IPAM menu at startup to insert its entry right below *Prefixes*. This relies on NetBox internals that may change between NetBox releases; if the IPAM menu does not look as expected, the entry falls back to the plugin's own *IPAM Tree* menu.
 
 ## Tree shape
 
