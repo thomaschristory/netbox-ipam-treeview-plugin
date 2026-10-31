@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from ipam.models import Prefix
 from users.models import ObjectPermission
 from utilities.testing import TestCase
@@ -130,3 +131,40 @@ class HiddenChildrenTest(TestCase):
         self.assertEqual([n.key for n in TreeBuilder(self.user).roots()], [vrf_key(None)])
         nodes = TreeBuilder(self.user).filtered(Prefix.objects.filter(pk=self.t["r16"].pk))
         self.assertEqual(nodes, [])
+
+
+class NoAggregatePermissionTest(TestCase):
+    """Without view_aggregate, restrict() alone keeps aggregates out of every part of the tree (#29)."""
+
+    user_permissions = ("ipam.view_prefix", "ipam.view_vrf")
+
+    def setUp(self):
+        super().setUp()
+        self.t = make_tree()
+
+    def assertNoAggregates(self, nodes):
+        self.assertTrue(nodes)
+        self.assertEqual([n.key for n in nodes if n.kind == "aggregate"], [])
+
+    def test_no_aggregate_anywhere(self):
+        b = TreeBuilder(self.user, show_free_space=False)
+        self.assertNoAggregates(b.children(vrf_key(None), 0))
+        self.assertNoAggregates(b.children(vrf_key(self.t["red"].pk), 0))
+        self.assertNoAggregates(b.subtree(vrf_key(None), 0))
+        self.assertNoAggregates(b.full_tree())
+        self.assertNoAggregates(b.expand([vrf_key(None), agg_key(self.t["agg"].pk, None)]))
+        self.assertNoAggregates(b.filtered(Prefix.objects.filter(pk=self.t["p26"].pk)))
+        self.assertNoAggregates(TreeBuilder(self.user, group_by_vrf=False).roots())
+
+    def test_aggregate_keys_not_found(self):
+        b = TreeBuilder(self.user)
+        for call in (b.children, b.subtree):
+            with self.assertRaises(NodeNotFound):
+                call(agg_key(self.t["agg"].pk, None), 1)
+        with self.assertRaises(NodeNotFound):
+            b.tab_roots(f"aggregate:{self.t['agg'].pk}")
+
+    def test_tree_page_has_no_aggregate_rows(self):
+        r = self.client.get(reverse("plugins:netbox_ipam_treeview:subtree"), {"key": "__root__", "free": "0"})
+        self.assertContains(r, "10.1.1.0/26")
+        self.assertNotContains(r, "ipt-aggregate")

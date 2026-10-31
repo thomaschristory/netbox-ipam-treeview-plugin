@@ -55,7 +55,8 @@ class TreeBuilder:
             visible = visible.filter(prefix__family=family)
         self.prefixes = visible.select_related("vrf", "tenant", "role", "vlan").prefetch_related("scope", "tags")
         self.aggregates = None
-        if opt(show_aggregates, "show_aggregates") and user.has_perm("ipam.view_aggregate"):
+        if opt(show_aggregates, "show_aggregates"):
+            # Empty without view_aggregate: restrict() checks the permission itself.
             self.aggregates = Aggregate.objects.restrict(user, "view").select_related("rir")
             if family:
                 self.aggregates = self.aggregates.filter(prefix__family=family)
