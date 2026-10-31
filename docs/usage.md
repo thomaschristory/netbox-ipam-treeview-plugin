@@ -50,6 +50,18 @@ Free-space rows show the unallocated blocks between a node's children, as the la
 
 ![Free-space rows between allocated prefixes, each with a Create link](img/free-space.png)
 
+## IPv4 and IPv6
+
+The *IPv4 / IPv6 / Both* selector in the toolbar shows only one address family, or both. It applies to every level:
+VRF groups with no prefix of that family, aggregates, prefixes and free space of the other family are all hidden, and
+nodes still load lazily as you expand them. It is not a filter: the tree stays in its normal (not filtered) mode, and it
+combines with the filter panel when one is applied.
+
+The selector is on the tree page and on VRF *Tree* tabs. A prefix or an aggregate has a single family, so their tabs
+have no selector and always show their whole tree.
+
+![The tree showing only IPv6 prefixes](img/family.png)
+
 ## Filters
 
 The filter panel is NetBox's own prefix filter form. With a filter applied, the tree shows the matching prefixes plus their ancestors, greyed out, so you can see where each match sits. Filtered trees are capped by `expand_all_limit`.
@@ -95,7 +107,7 @@ The page remembers which nodes were open, in the browser's local storage, and re
 
 Each *Tree* tab remembers its own open nodes, per prefix, aggregate or VRF, the same way. Until you open or close a node there, a tab starts with its object and its children open (an aggregate that spans several VRFs starts with one collapsed row per VRF).
 
-The free-space switch is remembered in local storage and in an `ipam_tree_free` cookie, so pages and tabs are rendered with your choice from the start.
+The free-space switch is remembered in local storage and in an `ipam_tree_free` cookie, so pages and tabs are rendered with your choice from the start. The IPv4 / IPv6 selector is remembered in an `ipam_tree_af` cookie the same way.
 
 ## Keyboard
 

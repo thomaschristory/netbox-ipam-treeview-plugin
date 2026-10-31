@@ -12,7 +12,7 @@ from netbox.views import generic
 from utilities.views import ContentTypePermissionRequiredMixin, ViewTab, register_model_view
 
 from .columns import COLUMNS, USER_CONFIG_PATH, resolve_columns
-from .conf import FREE_COOKIE, free_preference, get_setting
+from .conf import FAMILY_COOKIE, FREE_COOKIE, family_preference, free_preference, get_setting
 from .tree.builder import NodeNotFound, TreeBuilder
 from .tree.nodes import tab_key
 from .utilization import bulk_aggregate_utilization, bulk_utilization
@@ -23,6 +23,10 @@ LIST_ONLY_PARAMS = {"page", "per_page", "sort", "ordering", "export"}
 
 def _free(request):
     return free_preference(request.GET.get("free"), request.COOKIES.get(FREE_COOKIE), get_setting("show_free_space"))
+
+
+def _family(request):
+    return family_preference(request.GET.get("af"), request.COOKIES.get(FAMILY_COOKIE))
 
 
 def _level(request):
@@ -56,6 +60,9 @@ def table_context(request, builder, nodes, **extra):
         "prefix_add_url": reverse("ipam:prefix_add"),
         "tree_perms": {a: request.user.has_perm(f"ipam.{a}_prefix") for a in ("add", "change", "delete")},
         "free": builder.show_free_space,
+        "family": builder.family,
+        # Only trees that can hold both families get the IPv4 / IPv6 selector (not a prefix's or aggregate's tab).
+        "family_selector": True,
         "filtered": False,
         "truncated": builder.truncated,
         "limit": builder.limit,
@@ -80,8 +87,8 @@ class TreeAccessMixin(ContentTypePermissionRequiredMixin):
     def get_required_permission(self):
         return "ipam.view_prefix"
 
-    def builder(self, request):
-        return TreeBuilder(request.user, show_free_space=_free(request))
+    def builder(self, request, family=True):
+        return TreeBuilder(request.user, show_free_space=_free(request), family=_family(request) if family else None)
 
     def rows(self, request, builder, nodes):
         response = render(request, "netbox_ipam_treeview/inc/rows.html", table_context(request, builder, nodes))
@@ -142,9 +149,10 @@ class NodeSubtreeView(TreeAccessMixin, View):
 
 class ExpandView(TreeAccessMixin, View):
     def get(self, request):
-        builder = self.builder(request)
         keys = [k for k in request.GET.get("keys", "").split(",") if k]
         tab = request.GET.get("tab")
+        # A prefix's or aggregate's tab shows its whole tree whatever family was chosen elsewhere (see _TreeTab).
+        builder = self.builder(request, family=not tab or tab.startswith("vrf:"))
         try:
             # A detail tab restores its own tree, rooted at its object, instead of the page's.
             roots = builder.tab_roots(tab) if tab else None
@@ -177,6 +185,8 @@ class _TreeTab(generic.ObjectView):
     template_name = "netbox_ipam_treeview/tab.html"
     base_template = "generic/object.html"
     setting = None
+    # A prefix or an aggregate has a single family: only the VRF tab offers the IPv4 / IPv6 selector.
+    family_selector = False
 
     def get(self, request, *args, **kwargs):
         if not get_setting(self.setting):
@@ -188,7 +198,8 @@ class _TreeTab(generic.ObjectView):
         return builder.object_roots(instance)
 
     def get_extra_context(self, request, instance):
-        builder = TreeBuilder(request.user, show_free_space=_free(request))
+        family = _family(request) if self.family_selector else None
+        builder = TreeBuilder(request.user, show_free_space=_free(request), family=family)
         try:
             roots = self.tree_roots(builder, instance)
         except NodeNotFound:
@@ -206,6 +217,7 @@ class _TreeTab(generic.ObjectView):
             # NetBox's ObjectView passes its ViewTab under that name for the tab bar.
             tree_tab=tab,
             storage_key=f"ipam-tree:{tab}",
+            family_selector=self.family_selector,
         )
 
 
@@ -251,3 +263,4 @@ class VRFTreeTab(_TreeTab):
     queryset = VRF.objects.all()
     setting = "show_vrf_tab"
     tab = _tab("show_vrf_tab")
+    family_selector = True

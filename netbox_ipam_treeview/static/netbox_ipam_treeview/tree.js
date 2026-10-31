@@ -22,12 +22,17 @@
 
   const FREE_KEY = "ipam-tree:free";
   const FREE_COOKIE = "ipam_tree_free"; // conf.FREE_COOKIE: lets the server render the first rows to match
+  const FAMILY_COOKIE = "ipam_tree_af"; // conf.FAMILY_COOKIE: the IPv4 / IPv6 / Both selector ("4", "6" or "")
   const MAX_SAVED_KEYS = 200; // keeps the restore URL short; ancestors come first in DOM order
+
+  function setCookie(name, value) {
+    const secure = location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax${secure}`;
+  }
 
   function rememberFree(on) {
     store.set(FREE_KEY, on);
-    const secure = location.protocol === "https:" ? "; secure" : "";
-    document.cookie = `${FREE_COOKIE}=${on ? 1 : 0}; path=/; max-age=31536000; samesite=lax${secure}`;
+    setCookie(FREE_COOKIE, on ? 1 : 0);
   }
 
   function init(table) {
@@ -53,6 +58,8 @@
       const u = new URL(base, location.origin);
       Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
       u.searchParams.set("free", ds.free);
+      // Always sent, empty for both: a prefix's or aggregate's tab must not pick up the family remembered elsewhere.
+      u.searchParams.set("af", ds.family || "");
       return u;
     }
 
@@ -348,6 +355,16 @@
         // Reload so already-expanded nodes are re-rendered with or without free space.
         const u = new URL(location.href);
         u.searchParams.set("free", ds.free);
+        location.assign(u);
+      });
+    });
+
+    document.querySelectorAll('[data-ipt-action="family"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        setCookie(FAMILY_COOKIE, radio.value);
+        // Reload: the whole tree, already-expanded nodes included, is rendered for the chosen family.
+        const u = new URL(location.href);
+        u.searchParams.set("af", radio.value);
         location.assign(u);
       });
     });

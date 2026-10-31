@@ -33,6 +33,7 @@ class TreeBuilder:
         limit=None,
         max_gap_rows=None,
         respect_mark_utilized=None,
+        family=None,
     ):
         def opt(value, key):
             return get_setting(key) if value is None else value
@@ -47,10 +48,17 @@ class TreeBuilder:
         # restrict() only adds a WHERE clause for constrained permissions. Unconstrained users can rely on
         # NetBox's cached _depth; constrained users need nearest-visible-ancestor nesting instead.
         self.restricted = bool(visible.query.where)
+        # The IPv4 / IPv6 selector: a prefix's ancestors, children and free space share its family, so restricting
+        # the querysets restricts every level (and keeps NetBox's cached _depth/_children valid).
+        self.family = family
+        if family:
+            visible = visible.filter(prefix__family=family)
         self.prefixes = visible.select_related("vrf", "tenant", "role", "vlan").prefetch_related("scope", "tags")
         self.aggregates = None
         if opt(show_aggregates, "show_aggregates") and user.has_perm("ipam.view_aggregate"):
             self.aggregates = Aggregate.objects.restrict(user, "view").select_related("rir")
+            if family:
+                self.aggregates = self.aggregates.filter(prefix__family=family)
         self.vrfs = VRF.objects.restrict(user, "view")
         self.truncated = False
         self._vrf_networks = None  # lazily loaded by _foreign_occupied()
