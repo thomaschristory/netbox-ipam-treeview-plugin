@@ -429,17 +429,30 @@ class TreeBuilder:
             return []
         matches = {p.pk for p in rows}
         vrf_ids = {p.vrf_id for p in rows}
+        # Ancestor candidates (every prefix with children) as (pk, prefix, vrf_id) only: most are not ancestors of a
+        # match, so full objects are loaded just for the context rows that are kept.
         candidates = [
-            p for v in vrf_ids for p in self._in_vrf(self.prefixes, v).filter(_children__gt=0).exclude(pk__in=matches)
+            row
+            for v in vrf_ids
+            for row in self._in_vrf(self.prefixes, v)
+            .filter(_children__gt=0)
+            .exclude(pk__in=matches)
+            .order_by("pk")  # duplicate networks keep NetBox's tie order
+            .values_list("pk", "prefix", "vrf_id")
         ]
-        nested = nest(Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in rows + candidates)
+        items = [Item(p.prefix, p.pk, p.vrf_id) for p in rows]
+        nested = nest(items + [Item(net, pk, vrf_id) for pk, net, vrf_id in candidates])
         keep = set()
         for i, n in enumerate(nested):
-            j = i if n.item.payload[1].pk in matches else None
+            j = i if n.item.payload in matches else None
             while j is not None and j not in keep:
                 keep.add(j)
                 j = nested[j].parent
-        kept = [nested[i].item.payload[1] for i in sorted(keep)]
+        kept_pks = [nested[i].item.payload for i in sorted(keep)]
+        objects = {p.pk: p for p in rows}
+        objects.update((p.pk, p) for p in self.prefixes.filter(pk__in=set(kept_pks) - matches))
+        # An ancestor deleted in between is skipped; its children nest under the next ancestor kept.
+        kept = [objects[pk] for pk in kept_pks if pk in objects]
 
         if not self.group_by_vrf:
             items = [Item(p.prefix, ("prefix", p, p.vrf_id), p.vrf_id) for p in kept]
