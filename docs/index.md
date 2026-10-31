@@ -9,6 +9,7 @@ netbox-ipam-treeview-plugin adds a DDI-style, collapsible tree view of NetBox IP
 - **Collapsible tree**: roots are VRFs (Global first) and the aggregates holding their prefixes; children load lazily as you expand, so it stays fast on large IPAMs.
 - **Expand all / Collapse all** for the whole tree or any subtree, capped by `expand_all_limit` so a click can never render an unbounded page.
 - **Free space** between children, shown as greyed rows with a one-click *Create* that pre-fills the prefix and VRF.
+- **IPv4 / IPv6 / Both** selector in the toolbar, remembered in the browser.
 - **Utilization bars** with the same numbers as NetBox's own prefix views, computed in bulk.
 - **Row actions** (add child, edit, delete), shown only when you have the permission.
 - **NetBox filters**: the native prefix filter form; matches are shown with their ancestors as greyed context.

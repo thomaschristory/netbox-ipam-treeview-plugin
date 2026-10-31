@@ -1,6 +1,8 @@
 PLUGIN_NAME = "netbox_ipam_treeview"
 # Mirrors the free-space switch (kept in localStorage by tree.js) so the server renders the first rows to match.
 FREE_COOKIE = "ipam_tree_free"
+# The IPv4 / IPv6 / Both selector, remembered by tree.js.
+FAMILY_COOKIE = "ipam_tree_af"
 
 DEFAULTS = {
     "show_menu_item": True,
@@ -32,3 +34,9 @@ def free_preference(query, cookie, default):
     if cookie in ("0", "1"):
         return cookie == "1"
     return default
+
+
+def family_preference(query, cookie):
+    """4, 6 or None (both): the ?af= parameter wins (empty means both), then the browser's remembered choice."""
+    value = cookie if query is None else query
+    return int(value) if value in ("4", "6") else None

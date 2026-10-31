@@ -12,6 +12,16 @@
       <label class="form-check-label" for="ipt-free">{% trans "Free space" %}</label>
     </div>
   {% endif %}
+  {% if family_selector %}
+    <div class="btn-group ms-2" role="group" aria-label="{% trans 'Address family' %}">
+      <input type="radio" class="btn-check" name="ipt-family" id="ipt-family-4" value="4" data-ipt-action="family"{% if family == 4 %} checked{% endif %}>
+      <label class="btn btn-outline-secondary" for="ipt-family-4">IPv4</label>
+      <input type="radio" class="btn-check" name="ipt-family" id="ipt-family-6" value="6" data-ipt-action="family"{% if family == 6 %} checked{% endif %}>
+      <label class="btn btn-outline-secondary" for="ipt-family-6">IPv6</label>
+      <input type="radio" class="btn-check" name="ipt-family" id="ipt-family-all" value="" data-ipt-action="family"{% if not family %} checked{% endif %}>
+      <label class="btn btn-outline-secondary" for="ipt-family-all">{% trans "Both" %}</label>
+    </div>
+  {% endif %}
   {% if request.user.is_authenticated %}{# anonymous users (LOGIN_REQUIRED=False) cannot store column preferences #}
   <div class="dropdown ms-auto">
     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">

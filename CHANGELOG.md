@@ -5,6 +5,12 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- An *IPv4 / IPv6 / Both* selector in the toolbar of the tree page and of VRF *Tree* tabs. It restricts prefixes,
+  aggregates and free space at every level without switching to filtered mode, and is remembered in an `ipam_tree_af`
+  cookie. Prefix and aggregate tabs, which hold a single family, always show their whole tree (#27).
+
 ### Fixed
 
 - On a *Tree* tab whose object was deleted or hidden after the page loaded, *Expand all* and the saved-state restore
