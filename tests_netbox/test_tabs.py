@@ -159,6 +159,16 @@ class TabStateTest(TestCase):
             r = self.client.get(reverse(EXPAND), {"tab": tab, "keys": ""})
             self.assertEqual(r.status_code, 404, tab)
 
+    def test_expand_unknown_tab_error_row_is_top_level(self):
+        # tree.js puts this row in place of the tab's tree, whose roots are top-level rows (#35).
+        for params in ({"keys": ""}, {"all": "1"}, {"keys": "", "key": "pfx:1", "level": "3"}):
+            with self.subTest(**params):
+                r = self.client.get(reverse(EXPAND), {"tab": "prefix:999999", **params})
+                self.assertContains(r, "ipt-error", status_code=404)
+                self.assertContains(r, 'data-level="0"', status_code=404)
+                self.assertContains(r, 'data-parent=""', status_code=404)
+                self.assertContains(r, "--ipt-level: 0", status_code=404)
+
     def test_expand_tab_hidden_from_user_404(self):
         self.remove_permissions("ipam.view_vrf")
         r = self.client.get(reverse(EXPAND), {"tab": tab_key("vrf", self.t["red"].pk), "keys": ""})

@@ -89,9 +89,11 @@ class TreeAccessMixin(ContentTypePermissionRequiredMixin):
             response["X-Tree-Truncated"] = "1"
         return response
 
-    def not_found(self, request):
+    def not_found(self, request, parent_key=None, level=None):
         # tree.js shows this row under the node that failed to load (e.g. a prefix deleted since the page loaded).
-        context = {"error": True, "parent_key": request.GET.get("key", ""), "level": _level(request) + 1}
+        if parent_key is None:
+            parent_key, level = request.GET.get("key", ""), _level(request) + 1
+        context = {"error": True, "parent_key": parent_key, "level": level}
         return render(request, "netbox_ipam_treeview/inc/rows.html", context, status=404)
 
 
@@ -147,7 +149,8 @@ class ExpandView(TreeAccessMixin, View):
             # A detail tab restores its own tree, rooted at its object, instead of the page's.
             roots = builder.tab_roots(tab) if tab else None
         except NodeNotFound:
-            return self.not_found(request)
+            # The tab's object is gone or hidden: tree.js puts this row in place of its tree (top-level roots).
+            return self.not_found(request, parent_key="", level=0)
         # all=1 restores "Expand all": every node within the row budget, as subtree/?key=__root__ does on the page.
         nodes = builder.full_tree(roots) if request.GET.get("all") == "1" else builder.expand(keys, roots)
         return self.rows(request, builder, nodes)

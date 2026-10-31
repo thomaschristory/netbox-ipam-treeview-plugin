@@ -87,6 +87,17 @@
       return Array.from(t.content.querySelectorAll("tr.ipt-error"));
     }
 
+    // A detail tab's whole tree failed to load (its object was deleted or hidden since the page loaded): show the
+    // server's top-level error row in its place. Anything else (403, login redirect) leaves the table as it is.
+    function tabFailed(res) {
+      console.warn("[ipam-tree]", new Error(`HTTP ${res.status} loading ${tab}`));
+      const errors = errorRows(res);
+      if (!errors.length) return;
+      tbody.replaceChildren(...errors);
+      banner(false);
+      allExpanded = false;
+    }
+
     function descendants(row) {
       const out = [];
       for (let r = row.nextElementSibling; r && level(r) > level(row); r = r.nextElementSibling) out.push(r);
@@ -216,7 +227,10 @@
       try {
         // A detail tab's whole tree is rooted at its object; both share one expand_all_limit budget.
         const res = await fetchRows(allUrl());
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (tab) tabFailed(res);
+          return;
+        }
         tbody.innerHTML = res.html;
         banner(res.truncated);
         rememberLoaded(rows());
@@ -258,7 +272,12 @@
         return;
       }
       // Never overwrite what the user did while the restore was loading.
-      if (interacted || !res.ok || !res.html.trim()) return;
+      if (interacted) return;
+      if (!res.ok) {
+        if (tab) tabFailed(res);
+        return;
+      }
+      if (!res.html.trim()) return;
       tbody.innerHTML = res.html;
       tbody.querySelector("tr.ipt-row")?.setAttribute("tabindex", "0");
       banner(res.truncated);
