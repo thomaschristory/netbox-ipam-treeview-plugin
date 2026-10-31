@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- On a *Tree* tab whose object was deleted or hidden after the page loaded, *Expand all* and the saved-state restore
+  now show the *Not found or no permission* row in place of the tree instead of doing nothing (#35).
+
 ## [0.2.1] - 2026-10-27
 
 ### Fixed
