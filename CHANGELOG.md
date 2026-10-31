@@ -11,6 +11,12 @@ versioning: [SemVer](https://semver.org/).
   aggregates and free space at every level without switching to filtered mode, and is remembered in an `ipam_tree_af`
   cookie. Prefix and aggregate tabs, which hold a single family, always show their whole tree (#27).
 
+### Changed
+
+- With a filter applied, ancestor candidates are fetched as bare keys, and full prefix rows (with their related
+  objects) are loaded only for the ancestors shown as context rows. On an 8,000-prefix IPAM, narrow filters render
+  about twice as fast (#25).
+
 ### Fixed
 
 - On a *Tree* tab whose object was deleted or hidden after the page loaded, *Expand all* and the saved-state restore

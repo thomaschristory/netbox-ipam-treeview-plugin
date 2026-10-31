@@ -196,6 +196,29 @@ class QueryScalingTest(TestCase):
     def test_aggregate_rows_query_count_does_not_grow_with_rows(self):
         self.assertEqual(self._vrf_children_queries(3), self._vrf_children_queries(30))
 
+    def test_filtered_ancestor_candidates_are_not_loaded_in_full(self):
+        # Every container is an ancestor candidate; only the match's ancestors are rendered, so only they are loaded
+        # as full rows (#25).
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from ipam.models import Prefix
+
+        for i in range(20):
+            Prefix.objects.create(prefix=f"10.{i}.0.0/16", status="container")
+            Prefix.objects.create(prefix=f"10.{i}.1.0/24")
+        Prefix.objects.create(prefix="172.16.0.0/12", status="container")
+        Prefix.objects.create(prefix="172.16.1.0/24", description="needle")
+        with CaptureQueriesContext(connection) as ctx:
+            r = self.client.get(reverse(NS + "tree"), {"q": "needle"})
+        self.assertContains(r, 'data-filtered="1"')
+        self.assertContains(r, "172.16.0.0/12")
+        self.assertNotContains(r, "10.3.0.0/16")
+        candidates = [q["sql"] for q in ctx.captured_queries if '"_children" > 0' in q["sql"]]
+        self.assertTrue(candidates)
+        for sql in candidates:
+            self.assertNotIn('"description"', sql)
+            self.assertNotIn("JOIN", sql)
+
 
 class AggregateUtilizationViewTest(TestCase):
     """Under a VRF group, an aggregate's utilization counts only that VRF's prefixes (#26)."""
