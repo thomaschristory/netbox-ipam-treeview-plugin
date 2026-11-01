@@ -114,6 +114,23 @@ class ViewTest(TestCase):
         r = self.client.post(reverse(NS + "columns"), {"columns": ["status"], "next": "https://evil.example/"})
         self.assertEqual(r.headers["Location"], reverse(NS + "tree"))
 
+    def test_columns_next_must_be_a_local_path(self):
+        # The form posts the page's own path; anything with a scheme or host falls back to the tree page.
+        tree = reverse(NS + "tree")
+        cases = {
+            f"{tree}?status=active&af=6": f"{tree}?status=active&af=6",
+            "/ipam/prefixes/1/tree/": "/ipam/prefixes/1/tree/",
+            f"http://testserver{tree}": tree,
+            "//evil.example/": tree,
+            "/\\evil.example/": tree,
+            "javascript:alert(1)": tree,
+            "": tree,
+        }
+        for next_url, location in cases.items():
+            with self.subTest(next=next_url):
+                r = self.client.post(reverse(NS + "columns"), {"columns": ["status"], "next": next_url})
+                self.assertEqual(r.headers["Location"], location)
+
 
 class PermissionViewTest(TestCase):
     # self.user has no permissions; anonymous cases log out first.

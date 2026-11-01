@@ -22,6 +22,11 @@ versioning: [SemVer](https://semver.org/).
 - On a *Tree* tab whose object was deleted or hidden after the page loaded, *Expand all* and the saved-state restore
   now show the *Not found or no permission* row in place of the tree instead of doing nothing (#35).
 
+### Security
+
+- After saving the column choice, the tree only redirects to a local path (`next=` with no scheme or host). Off-site
+  URLs were already refused; same-host absolute URLs now fall back to the tree page too.
+
 ## [0.2.1] - 2026-10-27
 
 ### Fixed
