@@ -172,9 +172,10 @@ class ColumnsView(TreeAccessMixin, View):
         request.user.config.set(USER_CONFIG_PATH, columns or None, commit=True)
         next_url = request.POST.get("next", "")
         # The form posts the page's own path: accept local paths only (no scheme or host, not even this one).
-        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
-            next_url = reverse("plugins:netbox_ipam_treeview:tree")
-        return HttpResponseRedirect(next_url)
+        # Redirecting inside the check (not after it) lets CodeQL see that next_url was validated.
+        if url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return HttpResponseRedirect(next_url)
+        return HttpResponseRedirect(reverse("plugins:netbox_ipam_treeview:tree"))
 
 
 #
