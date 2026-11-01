@@ -104,7 +104,7 @@ The dev stack is netbox-docker with the plugin mounted live, seeded with ~8,000 
 VRFs, aggregates, sites and VLANs.
 
 ```shell
-make dev          # build and start NetBox on http://localhost:8000 (admin / admin)
+make dev          # build and start NetBox on http://127.0.0.1:8000 (admin / admin; NETBOX_PORT to change)
 make seed         # load the demo dataset (make reseed to wipe and reload, make seed-big for ~5x)
 make test         # pure unit tests (no NetBox needed)
 make test-netbox  # integration tests inside the NetBox container
