@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-01
+
 ### Added
 
 - An *IPv4 / IPv6 / Both* selector in the toolbar of the tree page and of VRF *Tree* tabs. It restricts prefixes,

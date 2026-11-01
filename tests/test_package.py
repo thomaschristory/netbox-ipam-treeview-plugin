@@ -9,7 +9,7 @@ from netbox_ipam_treeview.conf import DEFAULTS, PLUGIN_NAME
 
 
 def test_version():
-    assert __version__ == "0.2.1"
+    assert __version__ == "0.3.0"
 
 
 def test_config_is_module_level():
