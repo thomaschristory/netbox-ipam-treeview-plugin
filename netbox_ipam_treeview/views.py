@@ -171,7 +171,8 @@ class ColumnsView(TreeAccessMixin, View):
         columns = [c for c in request.POST.getlist("columns") if c in COLUMNS]
         request.user.config.set(USER_CONFIG_PATH, columns or None, commit=True)
         next_url = request.POST.get("next", "")
-        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        # The form posts the page's own path: accept local paths only (no scheme or host, not even this one).
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
             next_url = reverse("plugins:netbox_ipam_treeview:tree")
         return HttpResponseRedirect(next_url)
 
