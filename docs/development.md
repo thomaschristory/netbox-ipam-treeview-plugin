@@ -20,10 +20,13 @@ The dev stack is netbox-docker with the plugin mounted live, seeded with about 8
 
 | Command | Effect |
 |---|---|
-| `make dev` | Build and start NetBox on <http://localhost:8000> (admin / admin). |
+| `make dev` | Build and start NetBox on <http://127.0.0.1:8000> (admin / admin). |
 | `make seed` | Load the demo dataset. `make reseed` wipes and reloads it, `make seed-big` loads about five times more. |
 | `make restart` | Restart NetBox and the worker; needed after Python changes. |
 | `make down` | Stop the stack. |
+
+NetBox is published on the loopback interface only, since the dev instance uses `admin` / `admin`. To run it next to
+another stack that already uses port 8000, pick another port: `NETBOX_PORT=8001 make dev`.
 
 Templates, JavaScript and CSS are bind-mounted, so changes to them show on a browser reload. The stack runs with `DEBUG=false` on purpose, since the debug toolbar makes requests several times slower.
 
