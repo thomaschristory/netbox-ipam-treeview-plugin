@@ -61,12 +61,10 @@ class ConstraintTestCase(TestCase):
         for label, r in self.every_endpoint().items():
             self.assertIn(r.status_code, (200, 404), label)
             for name in names:
-                self.assertNotContains(
-                    r,
-                    f'data-key="{pfx_key(self.t[name].pk)}"',
-                    status_code=r.status_code,
-                    msg_prefix=f"{label}: {name}",
-                )
+                pk = self.t[name].pk
+                # Neither a row of its own nor a reference from another row (data-parent) or a link.
+                for needle in (f'"{pfx_key(pk)}"', reverse("ipam:prefix", kwargs={"pk": pk})):
+                    self.assertNotContains(r, needle, status_code=r.status_code, msg_prefix=f"{label}: {name}")
 
     def assertUnreachable(self, *names):
         """A hidden prefix cannot be opened directly, through its key or its Tree tab."""
@@ -148,7 +146,10 @@ class TenantConstraintTest(ConstraintTestCase):
 
 
 class TagConstraintTest(ConstraintTestCase):
-    """Many-to-many constraints: a prefix matching several tags must still be one row and one object."""
+    """Many-to-many constraints: a prefix matching several tags must still be one row and one object.
+
+    restrict() filters with pk__in, so duplicates cannot occur today: this guards against a change to a plain join.
+    """
 
     def setUp(self):
         super().setUp()
@@ -256,7 +257,7 @@ class VRFObjectConstraintTest(ConstraintTestCase):
         r = self.get("tree")
         self.assertContains(r, f'data-key="{vrf_key(self.t["red"].pk)}"')
         self.assertNotContains(r, f'data-key="{vrf_key(self.blue.pk)}"')
-        self.assertNotContains(self.get("subtree", key="__root__"), f'data-key="{pfx_key(self.t["b24"].pk)}"')
+        self.assertHidden("b24")
 
     def test_hidden_vrf_unreachable(self):
         for endpoint in ("children", "subtree"):
